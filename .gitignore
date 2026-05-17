@@ -1,0 +1,59 @@
+# Build directories
+bin/
+lib/
+_build_/
+build/
+Debug/
+Release/
+x64/
+
+# Visual Studio files
+.vs/
+*.vcxproj.user
+*.vcxproj.filters
+*.sln.DotSettings
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Object files
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+
+# Executable files
+*.exe
+*.out
+*.app
+
+# CMake files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Python files
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Report/Assignment specific
+Report.docx
+Report.pdf
+REPORT_PIC/
+assignments/

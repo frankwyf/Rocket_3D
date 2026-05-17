@@ -1,0 +1,9 @@
+#ifndef LOADOBJ_HPP_FA2EAD60_3776_44D8_B587_C01D9E62649F
+#define LOADOBJ_HPP_FA2EAD60_3776_44D8_B587_C01D9E62649F
+
+#include "simple_mesh.hpp"
+
+
+
+SimpleMeshData load_obj_file(char const* aPath);
+#endif // !LOADOBJ_HPP_FA2EAD60-3776-44D8-B587-C01D9E62649F
