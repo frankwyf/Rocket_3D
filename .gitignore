@@ -24,6 +24,7 @@ x64/
 # Object files
 *.o
 *.obj
+!assets/*.obj
 *.a
 *.lib
 *.so
