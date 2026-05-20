@@ -7,6 +7,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+#include <array>
+#include <vector>
+#include <cstring>
+#include <cctype>
 
 #include "../support/error.hpp"
 #include "../support/program.hpp"
@@ -26,13 +30,159 @@
 
 namespace
 {
-	constexpr char const* kWindowTitle = "COMP3811 - CW2";
+	constexpr char const* kWindowTitle = "Rocket 3D";
 
 	constexpr float kPi_ = 3.1415926f;
-
 	constexpr float kMovementPerSecond_ = 5.f; // units per second
 	constexpr float kMouseSensitivity_ = 0.01f; // radians per pixel
 
+	constexpr float kStartupGameButtonX = -0.62f;
+	constexpr float kStartupGameButtonY = -0.05f;
+	constexpr float kStartupButtonWidth = 0.48f;
+	constexpr float kStartupButtonHeight = 0.20f;
+	constexpr float kStartupTestButtonX = 0.14f;
+	constexpr float kStartupTestButtonY = -0.05f;
+
+	struct Vertex2D
+	{
+		float x, y;
+		float r, g, b;
+	};
+
+	struct UiBatch
+	{
+		GLuint vao = 0;
+		GLuint vbo = 0;
+	};
+
+	void init_batch(UiBatch& b)
+	{
+		glGenVertexArrays(1, &b.vao);
+		glGenBuffers(1, &b.vbo);
+		glBindVertexArray(b.vao);
+		glBindBuffer(GL_ARRAY_BUFFER, b.vbo);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex2D), reinterpret_cast<void*>(offsetof(Vertex2D, x)));
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex2D), reinterpret_cast<void*>(offsetof(Vertex2D, r)));
+		glEnableVertexAttribArray(1);
+		glBindVertexArray(0);
+	}
+
+	void draw_vertices(ShaderProgram& uiProg, UiBatch& b, std::vector<Vertex2D> const& verts)
+	{
+		if (verts.empty())
+			return;
+		glDisable(GL_DEPTH_TEST);
+		glDisable(GL_CULL_FACE);
+		glUseProgram(uiProg.programId());
+		float const white[] = { 1.f, 1.f, 1.f };
+		glUniform3fv(0, 1, white);
+		glBindVertexArray(b.vao);
+		glBindBuffer(GL_ARRAY_BUFFER, b.vbo);
+		glBufferData(GL_ARRAY_BUFFER, verts.size() * sizeof(Vertex2D), verts.data(), GL_STREAM_DRAW);
+		glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(verts.size()));
+		glBindVertexArray(0);
+		glUseProgram(0);
+		glEnable(GL_CULL_FACE);
+		glEnable(GL_DEPTH_TEST);
+	}
+
+	void push_rect(std::vector<Vertex2D>& v, float x, float y, float w, float h, float r, float g, float b)
+	{
+		Vertex2D v0{ x, y, r, g, b };
+		Vertex2D v1{ x + w, y, r, g, b };
+		Vertex2D v2{ x + w, y - h, r, g, b };
+		Vertex2D v3{ x, y - h, r, g, b };
+		v.push_back(v0); v.push_back(v1); v.push_back(v2);
+		v.push_back(v0); v.push_back(v2); v.push_back(v3);
+	}
+
+	std::array<unsigned char, 7> glyph_rows(char c)
+	{
+		auto rows = std::array<unsigned char, 7>{ 0,0,0,0,0,0,0 };
+		switch (static_cast<char>(std::toupper(static_cast<unsigned char>(c))))
+		{
+		case 'A': rows = { 0x0E,0x11,0x11,0x1F,0x11,0x11,0x11 }; break;
+		case 'B': rows = { 0x1E,0x11,0x11,0x1E,0x11,0x11,0x1E }; break;
+		case 'C': rows = { 0x0E,0x11,0x10,0x10,0x10,0x11,0x0E }; break;
+		case 'D': rows = { 0x1E,0x11,0x11,0x11,0x11,0x11,0x1E }; break;
+		case 'E': rows = { 0x1F,0x10,0x10,0x1E,0x10,0x10,0x1F }; break;
+		case 'F': rows = { 0x1F,0x10,0x10,0x1E,0x10,0x10,0x10 }; break;
+		case 'G': rows = { 0x0E,0x11,0x10,0x13,0x11,0x11,0x0E }; break;
+		case 'H': rows = { 0x11,0x11,0x11,0x1F,0x11,0x11,0x11 }; break;
+		case 'I': rows = { 0x1F,0x04,0x04,0x04,0x04,0x04,0x1F }; break;
+		case 'J': rows = { 0x07,0x02,0x02,0x02,0x12,0x12,0x0C }; break;
+		case 'K': rows = { 0x11,0x12,0x14,0x18,0x14,0x12,0x11 }; break;
+		case 'L': rows = { 0x10,0x10,0x10,0x10,0x10,0x10,0x1F }; break;
+		case 'M': rows = { 0x11,0x1B,0x15,0x15,0x11,0x11,0x11 }; break;
+		case 'N': rows = { 0x11,0x19,0x15,0x13,0x11,0x11,0x11 }; break;
+		case 'O': rows = { 0x0E,0x11,0x11,0x11,0x11,0x11,0x0E }; break;
+		case 'P': rows = { 0x1E,0x11,0x11,0x1E,0x10,0x10,0x10 }; break;
+		case 'Q': rows = { 0x0E,0x11,0x11,0x11,0x15,0x12,0x0D }; break;
+		case 'R': rows = { 0x1E,0x11,0x11,0x1E,0x14,0x12,0x11 }; break;
+		case 'S': rows = { 0x0F,0x10,0x10,0x0E,0x01,0x01,0x1E }; break;
+		case 'T': rows = { 0x1F,0x04,0x04,0x04,0x04,0x04,0x04 }; break;
+		case 'U': rows = { 0x11,0x11,0x11,0x11,0x11,0x11,0x0E }; break;
+		case 'V': rows = { 0x11,0x11,0x11,0x11,0x11,0x0A,0x04 }; break;
+		case 'W': rows = { 0x11,0x11,0x11,0x15,0x15,0x15,0x0A }; break;
+		case 'X': rows = { 0x11,0x11,0x0A,0x04,0x0A,0x11,0x11 }; break;
+		case 'Y': rows = { 0x11,0x11,0x0A,0x04,0x04,0x04,0x04 }; break;
+		case 'Z': rows = { 0x1F,0x01,0x02,0x04,0x08,0x10,0x1F }; break;
+		case '0': rows = { 0x0E,0x11,0x13,0x15,0x19,0x11,0x0E }; break;
+		case '1': rows = { 0x04,0x0C,0x04,0x04,0x04,0x04,0x0E }; break;
+		case '2': rows = { 0x0E,0x11,0x01,0x02,0x04,0x08,0x1F }; break;
+		case '3': rows = { 0x1E,0x01,0x01,0x0E,0x01,0x01,0x1E }; break;
+		case '4': rows = { 0x02,0x06,0x0A,0x12,0x1F,0x02,0x02 }; break;
+		case '5': rows = { 0x1F,0x10,0x10,0x1E,0x01,0x01,0x1E }; break;
+		case '6': rows = { 0x0E,0x10,0x10,0x1E,0x11,0x11,0x0E }; break;
+		case '7': rows = { 0x1F,0x01,0x02,0x04,0x08,0x08,0x08 }; break;
+		case '8': rows = { 0x0E,0x11,0x11,0x0E,0x11,0x11,0x0E }; break;
+		case '9': rows = { 0x0E,0x11,0x11,0x0F,0x01,0x01,0x0E }; break;
+		case ' ': rows = { 0,0,0,0,0,0,0 }; break;
+		case '-': rows = { 0,0,0,0x1F,0,0,0 }; break;
+		case ':': rows = { 0,0x04,0x04,0,0x04,0x04,0 }; break;
+		case '.': rows = { 0,0,0,0,0,0x06,0x06 }; break;
+		case ',': rows = { 0,0,0,0,0x06,0x06,0x02 }; break;
+		case '+': rows = { 0,0x04,0x04,0x1F,0x04,0x04,0 }; break;
+		case '/': rows = { 0x01,0x02,0x04,0x08,0x10,0,0 }; break;
+		default: rows = { 0x1F,0x11,0x02,0x04,0x08,0x11,0x1F }; break;
+		}
+		return rows;
+	}
+
+	void draw_text(ShaderProgram& uiProg, UiBatch& batch, int windowWidth, int windowHeight, float xPx, float yPx, float sizePx, float r, float g, float b, char const* text)
+	{
+		if (!text || windowWidth <= 0 || windowHeight <= 0)
+			return;
+		float pixel = sizePx / 7.f;
+		float advance = pixel * 6.f;
+		std::vector<Vertex2D> verts;
+		verts.reserve(std::strlen(text) * 5 * 7 * 6);
+
+		auto to_ndc_x = [&](float px) { return (px / float(windowWidth)) * 2.f - 1.f; };
+		auto to_ndc_y = [&](float py) { return 1.f - (py / float(windowHeight)) * 2.f; };
+
+		for (std::size_t i = 0; text[i] != '\0'; ++i)
+		{
+			auto rows = glyph_rows(text[i]);
+			float gx = xPx + static_cast<float>(i) * advance;
+			for (int row = 0; row < 7; ++row)
+			{
+				for (int col = 0; col < 5; ++col)
+				{
+					if ((rows[row] & (1u << (4 - col))) == 0)
+						continue;
+					float x0 = to_ndc_x(gx + col * pixel);
+					float y0 = to_ndc_y(yPx + row * pixel);
+					float x1 = to_ndc_x(gx + (col + 1) * pixel);
+					float y1 = to_ndc_y(yPx + (row + 1) * pixel);
+					push_rect(verts, x0, y0, x1 - x0, y0 - y1, r, g, b);
+				}
+			}
+		}
+
+		draw_vertices(uiProg, batch, verts);
+	}
 
 	struct State_
 	{
@@ -51,6 +201,7 @@ namespace
 			bool is_split, start_split;
 			bool split_shift;
 			bool showStartupPage;
+			bool testMode;
 
 			// zoom
 			float phi, theta;
@@ -84,7 +235,7 @@ namespace
 	};
 }
 
-// Task 1.11: for button and mose check in UI implementation
+// In-game control button layout (NDC)
 float x1 = -0.5f;
 float y11 = -0.85f;
 float width1 = 0.2f;
@@ -162,14 +313,12 @@ int main() try
 	std::printf("VENDOR %s\n", glGetString(GL_VENDOR));
 	std::printf("VERSION %s\n", glGetString(GL_VERSION));
 	std::printf("SHADING_LANGUAGE_VERSION %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-	std::printf("\n===== START PAGE / GAMEPLAY GUIDE =====\n");
-	std::printf("Enter: start game\n");
-	std::printf("Space: enable camera control\n");
-	std::printf("W/S: zoom in/out, A/D: move left/right, Q/E: move up/down\n");
-	std::printf("F: launch rocket, R: reset rocket\n");
-	std::printf("C: switch camera, V: split screen, Shift/Ctrl: speed up/down\n");
-	std::printf("Mouse left button: launch button, right green button: reset button\n");
-	std::printf("========================================\n\n");
+	std::printf("\n===== START MENU =====\n");
+	std::printf("Select mode from startup menu: GAME or TEST\n");
+	std::printf("G/T keys can also select mode\n");
+	std::printf("Camera: SPACE + mouse, movement with W/A/S/D/Q/E\n");
+	std::printf("Rocket: F launch, R reset, C camera mode, V split view\n");
+	std::printf("======================\n\n");
 
 	// Ddebug output
 #	if !defined(NDEBUG)
@@ -327,7 +476,7 @@ int main() try
 	GLuint ship_vao11 = bind_vao(ship15);
 	std::size_t vertexCount_ship11 = ship15.vertex_positions.size();
 
-	//build the shader program
+	// build the shader program
 	ShaderProgram prog({
 		{ GL_VERTEX_SHADER, "assets/default.vert"},
 		{GL_FRAGMENT_SHADER, "assets/default.frag"}
@@ -337,11 +486,18 @@ int main() try
 		{GL_VERTEX_SHADER, "assets/landingpad.vert"},
 		{GL_FRAGMENT_SHADER, "assets/landingpad.frag"}
 		});
-	// for task 1.11 UI elements
+	// UI shader
 	ShaderProgram prog_ui({
 		{GL_VERTEX_SHADER, "assets/button.vert"},
 		{GL_FRAGMENT_SHADER, "assets/button.frag"}
 		});
+
+	ShaderProgram prog_startup_bg({
+		{GL_VERTEX_SHADER, "assets/startup_bg.vert"},
+		{GL_FRAGMENT_SHADER, "assets/startup_bg.frag"}
+		});
+
+	GLuint startupBackgroundTex = load_texture("assets/L4343A-4k.jpeg");
 
 
 	static float const kPositions1[] = {
@@ -426,14 +582,38 @@ int main() try
 	glBindBuffer(GL_ARRAY_BUFFER, colorVBO2);
 	glVertexAttribPointer(
 		1, // location = 1 in vertex shader
-		3, GL_FLOAT, GL_FALSE, // 3 floats, not normalized to [0..1] (GL FALSE)
+		3, GL_FLOAT, GL_FALSE, // 3 floats, not normalized to [0..1] (GL_FALSE)
 		0, // see above
 		0 // see above
 	);
 	glEnableVertexAttribArray(1);
 
+	static float const kStartupBgVerts[] = {
+		-1.f, -1.f, 0.f, 0.f,
+		 1.f, -1.f, 1.f, 0.f,
+		-1.f,  1.f, 0.f, 1.f,
+		 1.f,  1.f, 1.f, 1.f
+	};
+
+	GLuint startupBgVao = 0;
+	GLuint startupBgVbo = 0;
+	glGenVertexArrays(1, &startupBgVao);
+	glGenBuffers(1, &startupBgVbo);
+	glBindVertexArray(startupBgVao);
+	glBindBuffer(GL_ARRAY_BUFFER, startupBgVbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(kStartupBgVerts), kStartupBgVerts, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, reinterpret_cast<void*>(0));
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, reinterpret_cast<void*>(sizeof(float) * 2));
+	glEnableVertexAttribArray(1);
+	glBindVertexArray(0);
+
+	UiBatch textBatch{};
+	init_batch(textBatch);
+
 	state.prog = &prog;
 	state.camControl.showStartupPage = true;
+	state.camControl.testMode = false;
 	state.camControl.Pos_x = 0.0f;
 	state.camControl.Pos_y = 0.0f;
 	state.camControl.state_Left = 0;
@@ -452,17 +632,17 @@ int main() try
 
 	OGL_CHECKPOINT_ALWAYS();
 
-	// Task 1.12: evaluate the time it takes to render a frame
-	// Create GL_TIMESTAMP query objects
+	// GPU timing queries
+	
 	GLuint queryID[4];
 	int queryIndex = 0;
-	// Create three query objects
+	
 	glGenQueries(4, queryID);
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))
 	{
-		// 1.12-1 : Start the query timer for the whole frame
+		// Frame timing start
 		glQueryCounter(queryID[queryIndex], GL_TIMESTAMP);
 
 		// Let GLFW process events
@@ -497,15 +677,41 @@ int main() try
 		{
 			glViewport(0, 0, nwidth, nheight);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glUseProgram(prog_ui.programId());
-			static float const baseColor[] = { 0.2f, 1.f, 1.f };
-			glUniform3fv(0, 1, baseColor);
-			glBindVertexArray(vao1);
-			glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-			glBindVertexArray(vao2);
-			glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+			glDisable(GL_DEPTH_TEST);
+			glDisable(GL_CULL_FACE);
+			glUseProgram(prog_startup_bg.programId());
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, startupBackgroundTex);
+			glUniform1i(0, 0);
+			glBindVertexArray(startupBgVao);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 			glBindVertexArray(0);
 			glUseProgram(0);
+
+			std::vector<Vertex2D> startupButtons;
+			push_rect(startupButtons, kStartupGameButtonX, kStartupGameButtonY, kStartupButtonWidth, kStartupButtonHeight, 0.20f, 0.62f, 0.95f);
+			push_rect(startupButtons, kStartupTestButtonX, kStartupTestButtonY, kStartupButtonWidth, kStartupButtonHeight, 0.28f, 0.80f, 0.46f);
+			draw_vertices(prog_ui, textBatch, startupButtons);
+
+			auto ndc_to_px_x = [&](float x) { return (x + 1.f) * 0.5f * float(nwidth); };
+			auto ndc_to_px_y = [&](float y) { return (1.f - y) * 0.5f * float(nheight); };
+
+			float gameLabelX = ndc_to_px_x(kStartupGameButtonX) + 120.f;
+			float gameLabelY = ndc_to_px_y(kStartupGameButtonY - kStartupButtonHeight) + 28.f;
+			float testLabelX = ndc_to_px_x(kStartupTestButtonX) + 130.f;
+			float testLabelY = ndc_to_px_y(kStartupTestButtonY - kStartupButtonHeight) + 28.f;
+
+			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 60.f, 40.f, 0.98f, 0.98f, 0.98f, "ROCKET 3D");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 112.f, 22.f, 0.95f, 0.95f, 0.95f, "OPEN SOURCE FLIGHT DEMO");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 170.f, 17.f, 0.90f, 0.96f, 0.96f, "SPACE: ENABLE CAMERA   W A S D Q E: MOVE");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 198.f, 17.f, 0.90f, 0.96f, 0.96f, "F: LAUNCH   R: RESET   C: CAMERA   V: SPLIT");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 226.f, 17.f, 0.90f, 0.96f, 0.96f, "SHIFT/CTRL: SPEED +/-   G OR T: QUICK MODE SELECT");
+			draw_text(prog_ui, textBatch, nwidth, nheight, gameLabelX, gameLabelY, 22.f, 0.07f, 0.07f, 0.07f, "GAME MODE");
+			draw_text(prog_ui, textBatch, nwidth, nheight, testLabelX, testLabelY, 22.f, 0.07f, 0.07f, 0.07f, "TEST MODE");
+
+			glEnable(GL_CULL_FACE);
+			glEnable(GL_DEPTH_TEST);
 			glfwSwapBuffers(window);
 			continue;
 		}
@@ -593,7 +799,7 @@ int main() try
 			Ry = make_rotation_y(0.f);
 			T = make_translation({ -remote_x, -remote_y + 0.95f, -5.f });
 		}
-		// Task.1.8: camera2
+		// alternate camera preset
 		else {
 			Rx = make_rotation_x(0.f);
 			Ry = make_rotation_y(3.141592f / 2.f);
@@ -629,7 +835,7 @@ int main() try
 			glViewport(0, 0, nwidth, nheight);
 		}
 		
-		// 1.12-2 : Start the query timer for the world
+		// Timing start: environment pass
 		glQueryCounter(queryID[queryIndex + 1], GL_TIMESTAMP);
 
 		// Draw the world
@@ -648,10 +854,10 @@ int main() try
 		glBindVertexArray(0);
 		glUseProgram(0);
 
-		// 1.12-2 : Stop the query timer for the world
+		// Timing end: environment pass
 		glQueryCounter(queryID[queryIndex + 1], GL_TIMESTAMP);
 
-		// 1.12-3 : Start the query timer for the launchpad
+		// Timing start: landing pad pass
 		glQueryCounter(queryID[queryIndex + 2], GL_TIMESTAMP);
 
 		// render the first launchpad
@@ -684,10 +890,10 @@ int main() try
 		glBindVertexArray(0);
 		glUseProgram(0);
 
-		// 1.12-3 : Stop the query timer for the launchpad
+		// Timing end: landing pad pass
 		glQueryCounter(queryID[queryIndex + 2], GL_TIMESTAMP);
 
-		// 1.12-4 : Start the query timer for the rocket
+		// Timing start: rocket pass
 		glQueryCounter(queryID[queryIndex + 3], GL_TIMESTAMP);
 
 		// draw rocket
@@ -736,10 +942,10 @@ int main() try
 		glBindVertexArray(0);
 		glUseProgram(0);
 
-		// 1.12-4 : Stop the query timer for the rocket
+		// Timing end: rocket pass
 		glQueryCounter(queryID[queryIndex + 3], GL_TIMESTAMP);
 
-		// 1.12-1 : stop the query timer for the whole frame
+		// Frame timing end
 		glQueryCounter(queryID[queryIndex], GL_TIMESTAMP);
 
 		// Draw button
@@ -784,12 +990,15 @@ int main() try
 		}
 
 		// Print the elapsed time between each section
-		std::printf("==============Performance Test=================\n\n");
-		std::printf("Frame rendering time: %.2f ns\n", time[3]);
-		std::printf("Task 1.2 rendering time: %.2f ns\n", time[0]);
-		std::printf("Task 1.4 rendering time: %.2f ns\n", time[1]);
-		std::printf("Task 1.5 rendering time: %.2f ns\n", time[2]);
-		std::printf("\n==============Performance Test End=================\n\n");
+		if (state.camControl.testMode)
+		{
+			std::printf("============== Frame Timing ==============\n\n");
+			std::printf("Frame total: %.2f ns\n", time[3]);
+			std::printf("Environment pass: %.2f ns\n", time[0]);
+			std::printf("Landing pad pass: %.2f ns\n", time[1]);
+			std::printf("Rocket pass: %.2f ns\n", time[2]);
+			std::printf("\n==========================================\n\n");
+		}
 
 		OGL_CHECKPOINT_DEBUG();
 
@@ -798,7 +1007,7 @@ int main() try
 			// Right screen
 			if (state.camControl.state_Right == 0) {
 				if (state.camControl.speedUp) {
-					currentSpeed = currentSpeed * 2.f;
+				currentSpeed = currentSpeed * 2.f;
 				}
 				else if (state.camControl.slowDown) {
 					currentSpeed = currentSpeed / 2.f;
@@ -933,7 +1142,7 @@ int main() try
 	// Cleanup.
 	state.prog = nullptr;
 
-	//Task 1.12 : Clean up
+	// Cleanup GPU timing queries
 	// Clean up query objects
 	glDeleteQueries(4, queryID);
 
@@ -968,7 +1177,23 @@ namespace
 			if (state->camControl.showStartupPage)
 			{
 				if (GLFW_KEY_ENTER == aKey && GLFW_PRESS == aAction)
+				{
+					state->camControl.testMode = false;
 					state->camControl.showStartupPage = false;
+					std::printf("Mode selected: GAME\n");
+				}
+				else if (GLFW_KEY_G == aKey && GLFW_PRESS == aAction)
+				{
+					state->camControl.testMode = false;
+					state->camControl.showStartupPage = false;
+					std::printf("Mode selected: GAME\n");
+				}
+				else if (GLFW_KEY_T == aKey && GLFW_PRESS == aAction)
+				{
+					state->camControl.testMode = true;
+					state->camControl.showStartupPage = false;
+					std::printf("Mode selected: TEST\n");
+				}
 				return;
 			}
 			// R-key reloads shaders.
@@ -1155,8 +1380,9 @@ namespace
 		}
 	}
 
-	// Task 1.11: implement UI controls of rocket shoot and reset
+	// Mouse controls for startup and in-game action buttons
 
+	// Mouse controls for startup and in-game action buttons
 	void mouseButtonCallback(GLFWwindow* aWindow, int button, int action, int mods) {
 		if (auto* state = static_cast<State_*>(glfwGetWindowUserPointer(aWindow)))
 		{
@@ -1170,10 +1396,20 @@ namespace
 			if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 				if (state->camControl.showStartupPage)
 				{
-					if (normalizedX >= x1 && normalizedX <= (x1 + width1) && normalizedY <= y11 && normalizedY >= (y11 - height1))
+					if (normalizedX >= kStartupGameButtonX && normalizedX <= (kStartupGameButtonX + kStartupButtonWidth)
+						&& normalizedY <= kStartupGameButtonY && normalizedY >= (kStartupGameButtonY - kStartupButtonHeight))
+					{
+						state->camControl.testMode = false;
+											state->camControl.showStartupPage = false;
+						std::printf("Mode selected: GAME\n");
+					}
+					else if (normalizedX >= kStartupTestButtonX && normalizedX <= (kStartupTestButtonX + kStartupButtonWidth)
+						&& normalizedY <= kStartupTestButtonY && normalizedY >= (kStartupTestButtonY - kStartupButtonHeight))
+					{
+						state->camControl.testMode = true;
 						state->camControl.showStartupPage = false;
-					else if (normalizedX >= x2 && normalizedX <= (x2 + width1) && normalizedY <= y2 && normalizedY >= (y2 - height1))
-						glfwSetWindowShouldClose(aWindow, GLFW_TRUE);
+						std::printf("Mode selected: TEST\n");
+					}
 					return;
 				}
 				mods = 1;
@@ -1187,9 +1423,6 @@ namespace
 					state->camControl.shootTime = 0.0f;
 				}
 			}
-			/*else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
-				
-			}*/
 		}
 	}
 }
@@ -1207,3 +1440,4 @@ namespace
 			glfwDestroyWindow(window);
 	}
 }
+

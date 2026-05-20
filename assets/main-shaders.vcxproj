@@ -54,6 +54,10 @@
     <None Include="default.vert" />
     <None Include="landingpad.frag" />
     <None Include="landingpad.vert" />
+    <None Include="menubg.frag" />
+    <None Include="menubg.vert" />
+    <None Include="startup_bg.frag" />
+    <None Include="startup_bg.vert" />
     <None Include="text.frag" />
     <None Include="text.vert" />
   </ItemGroup>

@@ -53,8 +53,5 @@ dist/
 *.bak
 *.swp
 
-# Report/Assignment specific
-Report.docx
-Report.pdf
-REPORT_PIC/
-assignments/
+# Always include all asset files
+!assets/**
