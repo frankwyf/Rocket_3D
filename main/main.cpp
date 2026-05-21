@@ -42,6 +42,13 @@ namespace
 	constexpr float kStartupButtonHeight = 0.20f;
 	constexpr float kStartupTestButtonX = 0.14f;
 	constexpr float kStartupTestButtonY = -0.05f;
+	constexpr float kMissionTimeLimit = 45.f;
+
+	const std::array<Vec3f, 3> kMissionTargets = {
+		Vec3f{ 13.f, 4.5f, -1.f },
+		Vec3f{ 30.f, 11.f, -1.f },
+		Vec3f{ 52.f, 8.f, -1.f }
+	};
 
 	struct Vertex2D
 	{
@@ -184,11 +191,55 @@ namespace
 		draw_vertices(uiProg, batch, verts);
 	}
 
+	float measure_text_width_px(char const* text, float sizePx)
+	{
+		if (!text)
+			return 0.f;
+		float pixel = sizePx / 7.f;
+		float advance = pixel * 6.f;
+		return std::strlen(text) * advance;
+	}
+
+	void draw_text_centered_in_ndc_rect(
+		ShaderProgram& uiProg,
+		UiBatch& batch,
+		int windowWidth,
+		int windowHeight,
+		float x,
+		float y,
+		float w,
+		float h,
+		float sizePx,
+		float r,
+		float g,
+		float b,
+		char const* text
+	)
+	{
+		float const left = (x + 1.f) * 0.5f * float(windowWidth);
+		float const right = (x + w + 1.f) * 0.5f * float(windowWidth);
+		float const top = (1.f - y) * 0.5f * float(windowHeight);
+		float const bottom = (1.f - (y - h)) * 0.5f * float(windowHeight);
+		float const rectWidth = right - left;
+		float const rectHeight = bottom - top;
+		float const textWidth = measure_text_width_px(text, sizePx);
+		float const tx = left + (rectWidth - textWidth) * 0.5f;
+		float const ty = top + (rectHeight - sizePx) * 0.5f;
+		draw_text(uiProg, batch, windowWidth, windowHeight, tx, ty, sizePx, r, g, b, text);
+	}
+
 	struct State_
 	{
 		ShaderProgram* prog;
 		int windowWidth; 
 		int windowHeight; 
+		int score;
+		int successfulMissions;
+		int launchCount;
+		float missionTimer;
+		bool missionComplete;
+		bool missionFailed;
+		std::array<bool, 3> targetCollected;
 		struct CamCtrl_
 		{
 			// act
@@ -476,6 +527,10 @@ int main() try
 	GLuint ship_vao11 = bind_vao(ship15);
 	std::size_t vertexCount_ship11 = ship15.vertex_positions.size();
 
+	auto missionBeacon = make_cylinder(true, 14, { 1.0f, 0.85f, 0.15f }, make_scaling(0.35f, 0.35f, 0.35f));
+	GLuint missionBeaconVao = bind_vao(missionBeacon);
+	std::size_t missionBeaconVertices = missionBeacon.vertex_positions.size();
+
 	// build the shader program
 	ShaderProgram prog({
 		{ GL_VERTEX_SHADER, "assets/default.vert"},
@@ -614,6 +669,13 @@ int main() try
 	state.prog = &prog;
 	state.camControl.showStartupPage = true;
 	state.camControl.testMode = false;
+	state.score = 0;
+	state.successfulMissions = 0;
+	state.launchCount = 0;
+	state.missionTimer = kMissionTimeLimit;
+	state.missionComplete = false;
+	state.missionFailed = false;
+	state.targetCollected = { false, false, false };
 	state.camControl.Pos_x = 0.0f;
 	state.camControl.Pos_y = 0.0f;
 	state.camControl.state_Left = 0;
@@ -694,21 +756,13 @@ int main() try
 			push_rect(startupButtons, kStartupTestButtonX, kStartupTestButtonY, kStartupButtonWidth, kStartupButtonHeight, 0.28f, 0.80f, 0.46f);
 			draw_vertices(prog_ui, textBatch, startupButtons);
 
-			auto ndc_to_px_x = [&](float x) { return (x + 1.f) * 0.5f * float(nwidth); };
-			auto ndc_to_px_y = [&](float y) { return (1.f - y) * 0.5f * float(nheight); };
-
-			float gameLabelX = ndc_to_px_x(kStartupGameButtonX) + 120.f;
-			float gameLabelY = ndc_to_px_y(kStartupGameButtonY - kStartupButtonHeight) + 28.f;
-			float testLabelX = ndc_to_px_x(kStartupTestButtonX) + 130.f;
-			float testLabelY = ndc_to_px_y(kStartupTestButtonY - kStartupButtonHeight) + 28.f;
-
 			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 60.f, 40.f, 0.98f, 0.98f, 0.98f, "ROCKET 3D");
 			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 112.f, 22.f, 0.95f, 0.95f, 0.95f, "OPEN SOURCE FLIGHT DEMO");
 			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 170.f, 17.f, 0.90f, 0.96f, 0.96f, "SPACE: ENABLE CAMERA   W A S D Q E: MOVE");
 			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 198.f, 17.f, 0.90f, 0.96f, 0.96f, "F: LAUNCH   R: RESET   C: CAMERA   V: SPLIT");
 			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 226.f, 17.f, 0.90f, 0.96f, 0.96f, "SHIFT/CTRL: SPEED +/-   G OR T: QUICK MODE SELECT");
-			draw_text(prog_ui, textBatch, nwidth, nheight, gameLabelX, gameLabelY, 22.f, 0.07f, 0.07f, 0.07f, "GAME MODE");
-			draw_text(prog_ui, textBatch, nwidth, nheight, testLabelX, testLabelY, 22.f, 0.07f, 0.07f, 0.07f, "TEST MODE");
+			draw_text_centered_in_ndc_rect(prog_ui, textBatch, nwidth, nheight, kStartupGameButtonX, kStartupGameButtonY, kStartupButtonWidth, kStartupButtonHeight, 22.f, 0.07f, 0.07f, 0.07f, "GAME MODE");
+			draw_text_centered_in_ndc_rect(prog_ui, textBatch, nwidth, nheight, kStartupTestButtonX, kStartupTestButtonY, kStartupButtonWidth, kStartupButtonHeight, 22.f, 0.07f, 0.07f, 0.07f, "TEST MODE");
 
 			glEnable(GL_CULL_FACE);
 			glEnable(GL_DEPTH_TEST);
@@ -756,6 +810,47 @@ int main() try
 			T_trans = make_rotation_x(kPi_ / 2.f - th - 3.141592f / 2.f);
 			T1 = make_translation({ remote_x, remote_y, remote_z }) * T_trans;
 			T2 = make_rotation_z(kPi_ / 2.f - th - kPi_ / 2.f);
+		}
+
+		Vec3f const rocketWorldPos = { 1.f + remote_x, -0.95f + remote_y, -1.f + remote_z };
+		if (!state.missionComplete && !state.missionFailed)
+		{
+			state.missionTimer -= dt;
+			if (state.missionTimer <= 0.f)
+			{
+				state.missionTimer = 0.f;
+				state.missionFailed = true;
+				state.camControl.shoot = false;
+			}
+
+			if (state.camControl.shoot)
+			{
+				for (std::size_t i = 0; i < kMissionTargets.size(); ++i)
+				{
+					if (state.targetCollected[i])
+						continue;
+					Vec3f const d = rocketWorldPos - kMissionTargets[i];
+					if (dot(d, d) < 2.8f)
+					{
+						state.targetCollected[i] = true;
+						state.score += 100;
+					}
+				}
+
+				bool allCollected = true;
+				for (bool got : state.targetCollected)
+					allCollected = allCollected && got;
+
+				if (allCollected && state.camControl.shootTime >= 29.8f)
+				{
+					if (std::fabs(rocketWorldPos.x - 71.f) < 1.8f && std::fabs(rocketWorldPos.y + 0.97f) < 1.2f && std::fabs(rocketWorldPos.z + 1.f) < 1.5f)
+					{
+						state.missionComplete = true;
+						state.successfulMissions += 1;
+						state.score += 500;
+					}
+				}
+			}
 		}
 		if (state.camControl.state_Left == 0) {
 			if (state.camControl.speedUp) {
@@ -887,6 +982,19 @@ int main() try
 		glBindVertexArray(landingpad_vao);
 		glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei> (landing_vertex));
 
+		for (std::size_t i = 0; i < kMissionTargets.size(); ++i)
+		{
+			if (state.targetCollected[i])
+				continue;
+			float bob = 0.35f * std::sin(angle * 2.5f + static_cast<float>(i));
+			Mat44f beaconModel = make_translation({ kMissionTargets[i].x, kMissionTargets[i].y + bob, kMissionTargets[i].z });
+			glUniformMatrix4fv(0, 1, GL_TRUE, (projCameraWorld * beaconModel).v);
+			glUniformMatrix3fv(1, 1, GL_TRUE, normalMatrix.v);
+			glUniformMatrix4fv(11, 1, GL_TRUE, beaconModel.v);
+			glBindVertexArray(missionBeaconVao);
+			glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(missionBeaconVertices));
+		}
+
 		glBindVertexArray(0);
 		glUseProgram(0);
 
@@ -964,8 +1072,27 @@ int main() try
 		glBindVertexArray(0);
 		glUseProgram(0);
 
+		draw_text_centered_in_ndc_rect(prog_ui, textBatch, nwidth, nheight, x1, y11, width1, height1, 18.f, 0.08f, 0.08f, 0.08f, "LAUNCH");
+		draw_text_centered_in_ndc_rect(prog_ui, textBatch, nwidth, nheight, x2, y2, width1, height1, 18.f, 0.08f, 0.08f, 0.08f, "RESET");
 
-		// Wait for the results
+		int collectedCount = 0;
+		for (bool got : state.targetCollected)
+			if (got) ++collectedCount;
+		char hudLine1[128];
+		char hudLine2[128];
+		char hudLine3[128];
+		std::snprintf(hudLine1, sizeof(hudLine1), "MODE: %s", state.camControl.testMode ? "TEST" : "GAME");
+		std::snprintf(hudLine2, sizeof(hudLine2), "SCORE: %d  MISSIONS: %d  LAUNCHES: %d", state.score, state.successfulMissions, state.launchCount);
+		std::snprintf(hudLine3, sizeof(hudLine3), "TARGETS: %d/3  TIMER: %.1fs", collectedCount, state.missionTimer);
+		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 20.f, 18.f, 0.94f, 0.94f, 0.94f, hudLine1);
+		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 46.f, 18.f, 0.94f, 0.94f, 0.94f, hudLine2);
+		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 72.f, 18.f, 0.94f, 0.94f, 0.94f, hudLine3);
+		if (state.missionComplete)
+			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 100.f, 18.f, 0.75f, 1.0f, 0.75f, "MISSION COMPLETE - PRESS R TO RESTART");
+		else if (state.missionFailed)
+			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 100.f, 18.f, 1.0f, 0.70f, 0.70f, "MISSION FAILED - PRESS R TO RETRY");
+
+// Wait for the results
 		GLuint64 timestamp[4];
 		GLuint available = 0;
 		while (!available) {
@@ -994,10 +1121,10 @@ int main() try
 		{
 			std::printf("============== Frame Timing ==============\n\n");
 			std::printf("Frame total: %.2f ns\n", time[3]);
-			std::printf("Environment pass: %.2f ns\n", time[0]);
-			std::printf("Landing pad pass: %.2f ns\n", time[1]);
-			std::printf("Rocket pass: %.2f ns\n", time[2]);
-			std::printf("\n==========================================\n\n");
+		 std::printf("Environment pass: %.2f ns\n", time[0]);
+		 std::printf("Landing pad pass: %.2f ns\n", time[1]);
+		 std::printf("Rocket pass: %.2f ns\n", time[2]);
+		 std::printf("\n==========================================\n\n");
 		}
 
 		OGL_CHECKPOINT_DEBUG();
@@ -1103,28 +1230,18 @@ int main() try
 			glBindVertexArray(landingpad_vao);
 			glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei> (landing_vertex));
 
-			glBindVertexArray(0);
-			glUseProgram(0);
-
-			// draw rocket
-			glUseProgram(prog_landingpad.programId());
-			glUniformMatrix3fv(1, 1, GL_TRUE, normalMatrix.v);
-			glUniform3f(2, 0.3f, -0.6f, 0.3f);
-			glUniform3f(3, 0.8f, 0.8f, 0.8f);
-			glUniform3f(4, 0.1f, 0.5f, 0.1f);
-			glUniform3f(5, state.camControl.Pos_x, state.camControl.Pos_y, state.camControl.radius);
-			glUniform1f(6, 0.5f);
-			glUniform3f(7, -0.3f, -0.3f, -0.3f);
-			glUniform3f(8, 0.6f, 0.6f, 0.1f);
-			glUniform3f(9, 0.f, 0.4f, 0.f);
-			glUniform3f(10, 0.7f, 0.f, 0.f);
-
-			Mat44f rocketPosition_split = make_translation({ 1.f, -0.95f, -1.f });
-			glUniformMatrix4fv(0, 1, GL_TRUE, (projCameraWorld * rocketPosition_split * T1 * T2).v);
-			glUniformMatrix3fv(1, 1, GL_TRUE, normalMatrix.v);
-			glUniformMatrix4fv(11, 1, GL_TRUE, rocketPosition.v);
-			glBindVertexArray(ship_vao);
-			glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei> (vertexCount_ship));
+			for (std::size_t i = 0; i < kMissionTargets.size(); ++i)
+			{
+				if (state.targetCollected[i])
+					continue;
+				float bob = 0.35f * std::sin(angle * 2.5f + static_cast<float>(i));
+				Mat44f beaconModel = make_translation({ kMissionTargets[i].x, kMissionTargets[i].y + bob, kMissionTargets[i].z });
+				glUniformMatrix4fv(0, 1, GL_TRUE, (projCameraWorld * beaconModel).v);
+				glUniformMatrix3fv(1, 1, GL_TRUE, normalMatrix.v);
+				glUniformMatrix4fv(11, 1, GL_TRUE, beaconModel.v);
+				glBindVertexArray(missionBeaconVao);
+				glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(missionBeaconVertices));
+			}
 
 			glBindVertexArray(0);
 			glUseProgram(0);
@@ -1176,22 +1293,29 @@ namespace
 		{
 			if (state->camControl.showStartupPage)
 			{
+				auto activate_mode = [&](bool testMode) {
+					state->camControl.testMode = testMode;
+					state->camControl.showStartupPage = false;
+					state->camControl.shoot = false;
+					state->camControl.shootTime = 0.f;
+					state->missionTimer = kMissionTimeLimit;
+					state->missionComplete = false;
+					state->missionFailed = false;
+					state->targetCollected = { false, false, false };
+				};
 				if (GLFW_KEY_ENTER == aKey && GLFW_PRESS == aAction)
 				{
-					state->camControl.testMode = false;
-					state->camControl.showStartupPage = false;
+					activate_mode(false);
 					std::printf("Mode selected: GAME\n");
 				}
 				else if (GLFW_KEY_G == aKey && GLFW_PRESS == aAction)
 				{
-					state->camControl.testMode = false;
-					state->camControl.showStartupPage = false;
+					activate_mode(false);
 					std::printf("Mode selected: GAME\n");
 				}
 				else if (GLFW_KEY_T == aKey && GLFW_PRESS == aAction)
 				{
-					state->camControl.testMode = true;
-					state->camControl.showStartupPage = false;
+					activate_mode(true);
 					std::printf("Mode selected: TEST\n");
 				}
 				return;
@@ -1287,7 +1411,7 @@ namespace
 							state->camControl.state_Left = 0;
 						}
 						else {
-							state->camControl.state_Left += 1;
+						 state->camControl.state_Left += 1;
 						}
 						if (state->camControl.start_split) {
 							state->camControl.is_split = true;
@@ -1315,7 +1439,7 @@ namespace
 									state->camControl.state_Right = 0;
 								}
 								else {
-									state->camControl.state_Right += 1;
+								 state->camControl.state_Right += 1;
 								}
 							}
 						}
@@ -1337,7 +1461,11 @@ namespace
 				// space ship launch button!
 				else if (GLFW_KEY_F == aKey) {
 					if (GLFW_PRESS == aAction) {
+						if (!state->camControl.shoot)
+							state->launchCount += 1;
 						state->camControl.shoot = true;
+						state->missionComplete = false;
+						state->missionFailed = false;
 					}
 				}
 				// Reset button
@@ -1345,6 +1473,10 @@ namespace
 					if (GLFW_PRESS == aAction) {
 						state->camControl.shoot = false;
 						state->camControl.shootTime = 0.f;
+						state->missionTimer = kMissionTimeLimit;
+						state->missionComplete = false;
+						state->missionFailed = false;
+						state->targetCollected = { false, false, false };
 					}
 				}
 				//split button
@@ -1367,7 +1499,6 @@ namespace
 				auto const dy = float(aY - state->camControl.lastY);
 
 				state->camControl.phi += dx * kMouseSensitivity_;
-
 				state->camControl.theta += dy * kMouseSensitivity_;
 				if (state->camControl.theta > kPi_ / 2.f)
 					state->camControl.theta = kPi_ / 2.f;
@@ -1381,46 +1512,63 @@ namespace
 	}
 
 	// Mouse controls for startup and in-game action buttons
-
-	// Mouse controls for startup and in-game action buttons
-	void mouseButtonCallback(GLFWwindow* aWindow, int button, int action, int mods) {
+	void mouseButtonCallback(GLFWwindow* aWindow, int button, int action, int mods)
+	{
 		if (auto* state = static_cast<State_*>(glfwGetWindowUserPointer(aWindow)))
 		{
 			double mouseX, mouseY;
 			glfwGetCursorPos(aWindow, &mouseX, &mouseY);
 
-			// Turn into OpenGL coordinates
-			float normalizedX = (2.0f * static_cast<float> (mouseX)) / state->windowWidth - 1.0f;
-			float normalizedY = 1.0f - (2.0f * static_cast<float> (mouseY)) / state->windowHeight;
+			float normalizedX = (2.0f * static_cast<float>(mouseX)) / state->windowWidth - 1.0f;
+			float normalizedY = 1.0f - (2.0f * static_cast<float>(mouseY)) / state->windowHeight;
 
-			if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+			if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+			{
 				if (state->camControl.showStartupPage)
 				{
+					auto activate_mode = [&](bool testMode) {
+						state->camControl.testMode = testMode;
+						state->camControl.showStartupPage = false;
+						state->camControl.shoot = false;
+						state->camControl.shootTime = 0.f;
+						state->missionTimer = kMissionTimeLimit;
+						state->missionComplete = false;
+						state->missionFailed = false;
+						state->targetCollected = { false, false, false };
+					};
 					if (normalizedX >= kStartupGameButtonX && normalizedX <= (kStartupGameButtonX + kStartupButtonWidth)
 						&& normalizedY <= kStartupGameButtonY && normalizedY >= (kStartupGameButtonY - kStartupButtonHeight))
 					{
-						state->camControl.testMode = false;
-											state->camControl.showStartupPage = false;
+						activate_mode(false);
 						std::printf("Mode selected: GAME\n");
 					}
 					else if (normalizedX >= kStartupTestButtonX && normalizedX <= (kStartupTestButtonX + kStartupButtonWidth)
 						&& normalizedY <= kStartupTestButtonY && normalizedY >= (kStartupTestButtonY - kStartupButtonHeight))
 					{
-						state->camControl.testMode = true;
-						state->camControl.showStartupPage = false;
+						activate_mode(true);
 						std::printf("Mode selected: TEST\n");
 					}
 					return;
 				}
+
 				mods = 1;
-				if (normalizedX >= x1 && normalizedX <= (x1 + width1) && normalizedY <= y11 && normalizedY >= (y11 - height1)) {
+				if (normalizedX >= x1 && normalizedX <= (x1 + width1) && normalizedY <= y11 && normalizedY >= (y11 - height1))
+				{
 					if (!state->camControl.shoot)
-						state->camControl.shoot = true;
+						state->launchCount += 1;
+					state->camControl.shoot = true;
+					state->missionComplete = false;
+					state->missionFailed = false;
 				}
-				else if (normalizedX >= x2 && normalizedX <= (x2 + width1) && normalizedY <= y2 && normalizedY >= (y2 - height1)) {
+				else if (normalizedX >= x2 && normalizedX <= (x2 + width1) && normalizedY <= y2 && normalizedY >= (y2 - height1))
+				{
 					mods = 2;
 					state->camControl.shoot = false;
 					state->camControl.shootTime = 0.0f;
+					state->missionTimer = kMissionTimeLimit;
+					state->missionComplete = false;
+					state->missionFailed = false;
+					state->targetCollected = { false, false, false };
 				}
 			}
 		}
