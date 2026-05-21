@@ -4,6 +4,7 @@
 #include <utility>
 
 #include <cstdio>
+#include <filesystem>
 
 #include <glad.h>
 #include <GLFW/glfw3.h>
@@ -13,6 +14,26 @@
 
 namespace
 {
+	std::filesystem::path resolve_path_(char const* aPath)
+	{
+		std::filesystem::path input(aPath);
+		if (std::filesystem::exists(input))
+			return input;
+
+		auto current = std::filesystem::current_path();
+		for (auto probe = current; !probe.empty(); probe = probe.parent_path())
+		{
+			auto candidate = probe / input;
+			if (std::filesystem::exists(candidate))
+				return candidate;
+
+			if (probe == probe.root_path())
+				break;
+		}
+
+		return input;
+	}
+
 	GLuint load_shader_( 
 		GLenum aShaderType, 
 		char const* aSourcePath
@@ -144,8 +165,10 @@ namespace
 	{
 		// Load the shader source code from file
 		std::vector<GLchar> source;
+		auto const resolvedPath = resolve_path_(aSourcePath);
+		auto const resolvedPathString = resolvedPath.string();
 
-		if( std::FILE* fin = std::fopen( aSourcePath, "rb" ) )
+		if( std::FILE* fin = std::fopen( resolvedPathString.c_str(), "rb" ) )
 		{
 			auto const scopeFile_ = scope_exit_( [&fin] {
 				std::fclose( fin );
@@ -163,9 +186,9 @@ namespace
 				if( 0 == ret )
 				{
 					if( auto const err = std::ferror( fin ) )
-						throw Error( "load_shader_(): error while reading from '%s': %d (%zu bytes read, %zu total)", aSourcePath, err, read, length );
+						throw Error( "load_shader_(): error while reading from '%s': %d (%zu bytes read, %zu total)", resolvedPathString.c_str(), err, read, length );
 					if( std::feof( fin ) )
-						throw Error( "load_shader_(): unexpected EOF in '%s' (%zu bytes read, %zu total)", aSourcePath, read, length );
+						throw Error( "load_shader_(): unexpected EOF in '%s' (%zu bytes read, %zu total)", resolvedPathString.c_str(), read, length );
 				}
 			
 				read += ret;
@@ -173,7 +196,7 @@ namespace
 		}
 		else
 		{
-			throw Error( "load_shader_(): unable to open input file '%s'", aSourcePath );
+			throw Error( "load_shader_(): unable to open input file '%s' (cwd: %s)", aSourcePath, std::filesystem::current_path().string().c_str() );
 		}
 
 		// Create shader object
@@ -228,11 +251,11 @@ namespace
 		if( GL_TRUE != status )
 		{
 			glDeleteShader( shader );
-			throw Error( "%s \"%s\" compilation failed:\n%s\n", shaderTypeName, aSourcePath, log.data() );
+			throw Error( "%s \"%s\" compilation failed:\n%s\n", shaderTypeName, resolvedPathString.c_str(), log.data() );
 		}
 
 		if( !log.empty() )
-			std::fprintf( stderr, "Note: %s \"%s\" log:\n%s\n", shaderTypeName, aSourcePath, log.data() );
+			std::fprintf( stderr, "Note: %s \"%s\" log:\n%s\n", shaderTypeName, resolvedPathString.c_str(), log.data() );
 
 		OGL_CHECKPOINT_ALWAYS();
 

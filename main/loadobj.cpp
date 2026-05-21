@@ -1,18 +1,42 @@
 #include "loadobj.hpp"
 #include "rapidobj/rapidobj.hpp"
 #include "../support/error.hpp"
+#include <filesystem>
+
+namespace {
+	std::filesystem::path resolve_path(char const* aPath) {
+		std::filesystem::path input(aPath);
+		if (std::filesystem::exists(input)) {
+			return input;
+		}
+
+		auto current = std::filesystem::current_path();
+		for (auto probe = current; !probe.empty(); probe = probe.parent_path()) {
+			auto candidate = probe / input;
+			if (std::filesystem::exists(candidate)) {
+				return candidate;
+			}
+			if (probe == probe.root_path()) {
+				break;
+			}
+		}
+
+		return input;
+	}
+}
 
 // load the obj file
 SimpleMeshData load_obj_file(char const* aPath) {
 	//Cope with the exception
-	std::ifstream file_open(aPath, std::ios::binary);
+	auto resolvedPath = resolve_path(aPath);
+	std::ifstream file_open(resolvedPath, std::ios::binary);
 	if (!file_open) {
-		throw Error("Cannot find the file: %s", aPath);
+		throw Error("Cannot find the file: %s (cwd: %s)", aPath, std::filesystem::current_path().string().c_str());
 	}
 	file_open.close();
-	auto result = rapidobj::ParseFile(aPath);
+	auto result = rapidobj::ParseFile(resolvedPath.string());
 	if (result.error) {
-		throw Error("Can't load OBJ file '%s': '%s'", aPath, result.error.code.message().c_str());
+		throw Error("Can't load OBJ file '%s': '%s'", resolvedPath.string().c_str(), result.error.code.message().c_str());
 	}
 	rapidobj::Triangulate(result);
 	SimpleMeshData loaded_data;

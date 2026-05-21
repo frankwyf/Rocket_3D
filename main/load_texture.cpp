@@ -3,15 +3,40 @@
 #include <stb_image.h>
 #include "../support/error.hpp"
 #include "rapidobj/rapidobj.hpp"
+#include <filesystem>
+
+namespace {
+	std::filesystem::path resolve_path(char const* aPath) {
+		std::filesystem::path input(aPath);
+		if (std::filesystem::exists(input)) {
+			return input;
+		}
+
+		auto current = std::filesystem::current_path();
+		for (auto probe = current; !probe.empty(); probe = probe.parent_path()) {
+			auto candidate = probe / input;
+			if (std::filesystem::exists(candidate)) {
+				return candidate;
+			}
+			if (probe == probe.root_path()) {
+				break;
+			}
+		}
+
+		return input;
+	}
+}
 
 GLuint load_texture(char const* aPath) {
 	assert(aPath);
 	stbi_set_flip_vertically_on_load(true);
 
+	auto resolvedPath = resolve_path(aPath);
+
 	int w, h, channels;
-	stbi_uc* ptr = stbi_load(aPath, &w, &h, &channels, 4);
+	stbi_uc* ptr = stbi_load(resolvedPath.string().c_str(), &w, &h, &channels, 4);
 	if (!ptr) {
-		throw Error("Unable to load image '%s'\n", aPath);
+		throw Error("Unable to load image '%s' (cwd: %s)\n", aPath, std::filesystem::current_path().string().c_str());
 	}
 	GLuint tex = 0;
 	glGenTextures(1, &tex);
@@ -30,14 +55,15 @@ GLuint load_texture(char const* aPath) {
 }	
 
 std::unordered_map<std::string, Material> load_mtl(char const* aPath) {
-	std::ifstream file_open(aPath, std::ios::binary);
+	auto resolvedPath = resolve_path(aPath);
+	std::ifstream file_open(resolvedPath, std::ios::binary);
 	if (!file_open) {
-		throw Error("Cannot find the file: %s", aPath);
+		throw Error("Cannot find the file: %s (cwd: %s)", aPath, std::filesystem::current_path().string().c_str());
 	}
 	file_open.close();
-	auto result = rapidobj::ParseFile(aPath);
+	auto result = rapidobj::ParseFile(resolvedPath.string());
 	if (result.error) {
-		throw Error("Can't load OBJ file '%s': '%s'", aPath, result.error.code.message().c_str());
+		throw Error("Can't load OBJ file '%s': '%s'", resolvedPath.string().c_str(), result.error.code.message().c_str());
 	}
 	std::unordered_map<std::string, Material> materials;
 	std::string connection = "assets/";
