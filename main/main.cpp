@@ -1339,39 +1339,39 @@ int main() try
 		else if (state.missionFailed)
 			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 152.f, 18.f, 1.0f, 0.70f, 0.70f, "MISSION FAILED - PRESS R TO RETRY");
 
-		// Wait for the results
-		GLuint64 timestamp[4];
+		// Poll results without stalling the CPU/GPU pipeline
+		GLuint64 timestamp[4]{};
 		GLuint available = 0;
-		while (!available) {
-			glGetQueryObjectuiv(queryID[queryIndex], GL_QUERY_RESULT_AVAILABLE, &available);
-		}
-		glGetQueryObjectui64v(queryID[queryIndex], GL_QUERY_RESULT, &timestamp[0]);
-		glGetQueryObjectui64v(queryID[queryIndex + 1], GL_QUERY_RESULT, &timestamp[1]);
-		glGetQueryObjectui64v(queryID[queryIndex + 2], GL_QUERY_RESULT, &timestamp[2]);
-		glGetQueryObjectui64v(queryID[queryIndex + 3], GL_QUERY_RESULT, &timestamp[3]);
-
-		// Calculate the elapsed time between each section
-		GLuint64 elapsedTime[4];
-		elapsedTime[0] = timestamp[1] - timestamp[0];
-		elapsedTime[1] = timestamp[2] - timestamp[1];
-		elapsedTime[2] = timestamp[3] - timestamp[2];
-		elapsedTime[3] = timestamp[3] - timestamp[0];
-
-		// Convert the time to nanoseconds
-		float time[4];
-		for (int i = 0; i < 4; i++) {
-			time[i] = elapsedTime[i] / 1000000.0f;
-		}
-
-		// Print the elapsed time between each section
-		if (state.camControl.testMode)
+		glGetQueryObjectuiv(queryID[queryIndex], GL_QUERY_RESULT_AVAILABLE, &available);
+		if (available)
 		{
-			std::printf("============== Frame Timing ==============\n\n");
-			std::printf("Frame total: %.2f ns\n", time[3]);
-		 std::printf("Environment pass: %.2f ns\n", time[0]);
-		 std::printf("Landing pad pass: %.2f ns\n", time[1]);
-		 std::printf("Rocket pass: %.2f ns\n", time[2]);
-		 std::printf("\n==========================================\n\n");
+			glGetQueryObjectui64v(queryID[queryIndex], GL_QUERY_RESULT, &timestamp[0]);
+			glGetQueryObjectui64v(queryID[queryIndex + 1], GL_QUERY_RESULT, &timestamp[1]);
+			glGetQueryObjectui64v(queryID[queryIndex + 2], GL_QUERY_RESULT, &timestamp[2]);
+			glGetQueryObjectui64v(queryID[queryIndex + 3], GL_QUERY_RESULT, &timestamp[3]);
+
+			// Calculate the elapsed time between each section
+			GLuint64 elapsedTime[4];
+			elapsedTime[0] = timestamp[1] - timestamp[0];
+			elapsedTime[1] = timestamp[2] - timestamp[1];
+			elapsedTime[2] = timestamp[3] - timestamp[2];
+			elapsedTime[3] = timestamp[3] - timestamp[0];
+
+			float time[4];
+			for (int i = 0; i < 4; i++) {
+				time[i] = static_cast<float>(elapsedTime[i]) / 1000000.0f;
+			}
+
+			// Print the elapsed time between each section
+			if (state.camControl.testMode)
+			{
+				std::printf("============== Frame Timing ==============\n\n");
+				std::printf("Frame total: %.2f ms\n", time[3]);
+			 std::printf("Environment pass: %.2f ms\n", time[0]);
+			 std::printf("Landing pad pass: %.2f ms\n", time[1]);
+			 std::printf("Rocket pass: %.2f ms\n", time[2]);
+			 std::printf("\n==========================================\n\n");
+			}
 		}
 
 		OGL_CHECKPOINT_DEBUG();

@@ -14,16 +14,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multiple camera modes
 - Speed modulation controls
 - Landing pad collision detection
+- GitHub Actions CI workflow for Windows (`Debug` + `Release`) builds on every push/PR.
+- Unit tests for start-menu hit-testing and game configuration reset behavior.
+- More resilient OBJ loading fallback behavior for missing normals/UV/material assignments.
 
 ### Changed
 - Improved rocket model rendering pipeline
 - Enhanced shader performance
 - Optimized texture loading
+- CI now executes `vmlib-test` in both `Debug` and `Release` configurations.
+- Material texture path resolution now follows the loaded OBJ directory instead of relying on a fixed `assets/` prefix.
+- GPU frame timing in test mode now uses non-blocking query polling and reports values in milliseconds.
 
 ### Fixed
 - Camera jitter issues
 - Texture coordinate mapping bugs
 - Input handling edge cases
+- Startup/HUD text rendering call argument mismatches.
+- Boss-gate completion state accumulation typo causing progression logic/build issues.
+- Texture loading compatibility by removing unsupported anisotropy symbols for the current toolchain.
 
 ## [1.0.0] - 2024-01-15
 

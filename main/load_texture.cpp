@@ -50,7 +50,7 @@ GLuint load_texture(char const* aPath) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 6.f);
+
 	return tex;
 }	
 
@@ -66,7 +66,7 @@ std::unordered_map<std::string, Material> load_mtl(char const* aPath) {
 		throw Error("Can't load OBJ file '%s': '%s'", resolvedPath.string().c_str(), result.error.code.message().c_str());
 	}
 	std::unordered_map<std::string, Material> materials;
-	std::string connection = "assets/";
+	auto const baseDir = resolvedPath.parent_path();
 	for (const auto& this_mat : result.materials) {
 		Material material;
 		material.Shininess = this_mat.shininess;
@@ -78,7 +78,8 @@ std::unordered_map<std::string, Material> load_mtl(char const* aPath) {
 		material.dissolve = this_mat.dissolve;
 		material.illumination_model = this_mat.illum;
 		if (!this_mat.diffuse_texname.empty()) {
-			material.texture = load_texture((connection + (this_mat.diffuse_texname)).c_str());
+			auto texPath = baseDir / this_mat.diffuse_texname;
+			material.texture = load_texture(texPath.string().c_str());
 		}
 		else {
 			material.texture = 0;

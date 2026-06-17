@@ -52,27 +52,51 @@ SimpleMeshData load_obj_file(char const* aPath) {
 				}
 			);
 
-			// vertex normals
-			loaded_data.vertex_normals.emplace_back(Vec3f{
-				result.attributes.normals[index.normal_index * 3 + 0],
-				result.attributes.normals[index.normal_index * 3 + 1],
-				result.attributes.normals[index.normal_index * 3 + 2]
-				}
-			);
+			// vertex normals (fallback to +Y if source file has no normals)
+			if (index.normal_index >= 0 && static_cast<std::size_t>(index.normal_index * 3 + 2) < result.attributes.normals.size())
+			{
+				loaded_data.vertex_normals.emplace_back(Vec3f{
+					result.attributes.normals[index.normal_index * 3 + 0],
+					result.attributes.normals[index.normal_index * 3 + 1],
+					result.attributes.normals[index.normal_index * 3 + 2]
+					}
+				);
+			}
+			else
+			{
+				loaded_data.vertex_normals.emplace_back(Vec3f{ 0.f, 1.f, 0.f });
+			}
 
-			//vertex texture
-			loaded_data.vertex_textures.emplace_back(Vec2f{
-				result.attributes.texcoords[index.texcoord_index * 2 + 0],
-				result.attributes.texcoords[index.texcoord_index * 2 + 1]
-				}
-			);
+			//vertex texture (fallback to 0,0 if source file has no UV)
+			if (index.texcoord_index >= 0 && static_cast<std::size_t>(index.texcoord_index * 2 + 1) < result.attributes.texcoords.size())
+			{
+				loaded_data.vertex_textures.emplace_back(Vec2f{
+					result.attributes.texcoords[index.texcoord_index * 2 + 0],
+					result.attributes.texcoords[index.texcoord_index * 2 + 1]
+					}
+				);
+			}
+			else
+			{
+				loaded_data.vertex_textures.emplace_back(Vec2f{ 0.f, 0.f });
+			}
 
-			auto const& mat = result.materials[shape.mesh.material_ids[i / 3]];
-			loaded_data.colors.emplace_back(Vec3f{	
-				mat.ambient[0],
-				mat.ambient[1],
-				mat.ambient[2]
-				});
+			Vec3f color = { 1.f, 1.f, 1.f };
+			if (!result.materials.empty())
+			{
+				auto const triIdx = i / 3;
+				if (triIdx < shape.mesh.material_ids.size())
+				{
+					int matIdx = shape.mesh.material_ids[triIdx];
+					if (matIdx >= 0 && static_cast<std::size_t>(matIdx) < result.materials.size())
+					{
+						auto const& mat = result.materials[matIdx];
+						color = Vec3f{ mat.ambient[0], mat.ambient[1], mat.ambient[2] };
+					}
+				}
+			}
+
+			loaded_data.colors.emplace_back(color);
 		}
 	}
 	return loaded_data;
