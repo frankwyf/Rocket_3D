@@ -14,10 +14,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Generate Visual Studio solution
-        shell: powershell
-        run: ./premake5.exe vs2022
-
       - name: Build Release
         shell: powershell
         run: msbuild Rocket3D.sln /p:Configuration=Release /p:Platform=x64 /m
