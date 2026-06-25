@@ -1307,6 +1307,29 @@ int main() try
 		// Frame timing end
 		glQueryCounter(queryID[queryIndex], GL_TIMESTAMP);
 
+		// Speed lines overlay during high-speed flight
+		if (state.camControl.shoot && state.camControl.shootTime > 2.f)
+		{
+			float speed = state.camControl.shootTime * state.launchSpeedScale;
+			float intensity = std::min(speed / 20.f, 1.0f) * 0.35f;
+			if (intensity > 0.05f)
+			{
+				std::vector<Vertex2D> speedLines;
+				int lineCount = static_cast<int>(intensity * 16.f);
+				for (int s = 0; s < lineCount; ++s)
+				{
+					float frac = static_cast<float>(s) / static_cast<float>(lineCount);
+					float yp = -0.9f + frac * 1.8f;
+					float lineW = 0.005f + intensity * 0.008f;
+					float xOff = (frac * 7.13f) - static_cast<int>(frac * 7.13f); // pseudo-random
+					xOff = xOff * 0.6f + 0.35f;
+					push_rect(speedLines, xOff, yp, lineW, 0.45f * intensity, 1.f, 1.f, 1.f);
+					push_rect(speedLines, -xOff - lineW, yp - 0.1f, lineW, 0.35f * intensity, 0.9f, 0.95f, 1.f);
+				}
+				draw_vertices(prog_ui, textBatch, speedLines);
+			}
+		}
+
 		// Draw button
 		glUseProgram(prog_ui.programId());
 		static float const baseColor[] = { 0.2f, 1.f, 1.f };
