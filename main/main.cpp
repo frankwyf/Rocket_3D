@@ -85,11 +85,13 @@ namespace
 		float bossGateRadius;
 	};
 
-	const std::array<LevelConfig, 4> kLevels = {
-		LevelConfig{ "N-1", false, 48.f, 1.8f, 0.80f, 2.4f },
-		LevelConfig{ "N-2", false, 44.f, 2.0f, 1.00f, 2.2f },
-		LevelConfig{ "H-1", true, 40.f, 2.2f, 1.20f, 1.95f },
-		LevelConfig{ "H-2", true, 36.f, 2.4f, 1.35f, 1.75f }
+	const std::array<LevelConfig, 6> kLevels = {
+		LevelConfig{ "EASY-1", false, 55.f, 1.6f, 0.65f, 2.8f },
+		LevelConfig{ "EASY-2", false, 50.f, 1.8f, 0.80f, 2.5f },
+		LevelConfig{ "NORMAL-1", false, 46.f, 2.0f, 1.00f, 2.2f },
+		LevelConfig{ "NORMAL-2", false, 42.f, 2.1f, 1.10f, 2.0f },
+		LevelConfig{ "HARD-1", true, 38.f, 2.3f, 1.25f, 1.85f },
+		LevelConfig{ "HARD-2", true, 34.f, 2.5f, 1.40f, 1.65f }
 	};
 
 	const std::array<Vec3f, 3> kObstacleBases = {
