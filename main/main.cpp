@@ -877,15 +877,19 @@ int main() try
 			draw_vertices(prog_ui, textBatch, startupButtons);
 
 			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 60.f, 40.f, 0.98f, 0.98f, 0.98f, "ROCKET 3D");
-			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 112.f, 22.f, 0.95f, 0.95f, 0.95f, "OPEN SOURCE FLIGHT DEMO");
-			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 170.f, 17.f, 0.90f, 0.96f, 0.96f, "SPACE: ENABLE CAMERA   W A S D Q E: MOVE");
-			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 198.f, 17.f, 0.90f, 0.96f, 0.96f, "F: LAUNCH   R: RESET   C: CAMERA   V: SPLIT");
-			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 226.f, 17.f, 0.90f, 0.96f, 0.96f, "SHIFT/CTRL: SPEED +/-   G OR T: QUICK MODE SELECT");
-			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 254.f, 17.f, 0.90f, 0.96f, 0.96f, "ARROWS: STEER ROCKET   [ ]: LAUNCH SPEED   B: FOLLOW CAM");
-			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 282.f, 17.f, 0.90f, 0.96f, 0.96f, "CAM TUNE: ,/. SMOOTH   ;/' RECENTER DAMP   P: PRESET");
-			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 310.f, 17.f, 0.90f, 0.96f, 0.96f, "GAME MODE: CAMPAIGN AUTO NEXT LEVEL   TEST MODE: PERFORMANCE VIEW");
-			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 338.f, 17.f, 0.90f, 0.96f, 0.96f, "GOAL: COLLECT COINS -> PASS BOSS RINGS -> FINAL LANDING PAD");
-			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 366.f, 17.f, 0.90f, 0.96f, 0.96f, "ON-SCREEN BUTTONS: RED=LAUNCH   GREEN=RESET");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 108.f, 20.f, 0.92f, 0.96f, 1.0f, "6-LEVEL CAMPAIGN FLIGHT GAME");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 148.f, 15.f, 0.80f, 0.90f, 0.90f, "--- CONTROLS ---");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 172.f, 15.f, 0.90f, 0.96f, 0.96f, "SPACE: CAMERA ON/OFF   WASDQE: MOVE   MOUSE: LOOK");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 194.f, 15.f, 0.90f, 0.96f, 0.96f, "F: LAUNCH   R: RESET   C: CYCLE VIEW   V: SPLIT SCREEN");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 216.f, 15.f, 0.90f, 0.96f, 0.96f, "ARROWS: STEER   [ ]: SPEED   B: FOLLOW CAM   P: CAM PRESET");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 238.f, 15.f, 0.90f, 0.96f, 0.96f, ",/. ;/': TUNE SMOOTH/RECENTER   SHIFT/CTRL: MOVE SPEED");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 268.f, 15.f, 0.80f, 0.90f, 0.90f, "--- GAMEPLAY ---");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 290.f, 15.f, 0.90f, 0.96f, 0.96f, "COLLECT COINS -> FLY THROUGH BOSS RINGS -> LAND ON FINAL PAD");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 312.f, 15.f, 0.90f, 0.96f, 0.96f, "STEERING COSTS FUEL - WATCH THE FUEL BAR");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 334.f, 15.f, 0.90f, 0.96f, 0.96f, "COMBO: COLLECT QUICKLY FOR BONUS   AVOID RED OBSTACLES");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 356.f, 15.f, 0.90f, 0.96f, 0.96f, "6 LEVELS: EASY -> NORMAL -> HARD   AUTO ADVANCE ON SUCCESS");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 386.f, 15.f, 0.80f, 0.90f, 0.90f, "--- SELECT MODE ---");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 70.f, 408.f, 15.f, 0.90f, 0.96f, 0.96f, "GAME: 6-LEVEL CAMPAIGN   TEST: FREE FLIGHT + FRAME TIMING");
 			draw_text_centered_in_ndc_rect(prog_ui, textBatch, nwidth, nheight, kStartupGameButtonX, kStartupGameButtonY, kStartupButtonWidth, kStartupButtonHeight, 22.f, 0.07f, 0.07f, 0.07f, "GAME MODE");
 			draw_text_centered_in_ndc_rect(prog_ui, textBatch, nwidth, nheight, kStartupTestButtonX, kStartupTestButtonY, kStartupButtonWidth, kStartupButtonHeight, 22.f, 0.07f, 0.07f, 0.07f, "TEST MODE");
 
@@ -896,10 +900,16 @@ int main() try
 		}
 
 		// Update state
-		//TODO: update state
 		auto const now = Clock::now();
 		float dt = std::chrono::duration_cast<Secondsf>(now - last).count();
 		last = now;
+
+		// Dynamic window title
+		{
+			char titleBuf[128];
+			std::snprintf(titleBuf, sizeof(titleBuf), "Rocket 3D - %s [Score: %d]", kLevels[state.currentLevel].name, state.score);
+			glfwSetWindowTitle(window, titleBuf);
+		}
 
 
 		angle += dt * kPi_ * 0.3f;
