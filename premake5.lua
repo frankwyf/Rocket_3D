@@ -139,7 +139,9 @@ project "vmlib-test"
 		"vmlib-test/**.cpp",
 		"vmlib-test/**.hpp",
 		"vmlib-test/**.hxx",
-		"vmlib-test/**.inl"
+		"vmlib-test/**.inl",
+		"main/menu_screen.cpp",
+		"main/menu_screen.hpp"
 	}
 
 	kind "ConsoleApp"

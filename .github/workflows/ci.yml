@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-and-test-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build Release
+        shell: powershell
+        run: msbuild Rocket3D.sln /p:Configuration=Release /p:Platform=x64 /m
+
+      - name: Build Debug
+        shell: powershell
+        run: msbuild Rocket3D.sln /p:Configuration=Debug /p:Platform=x64 /m
+
+      - name: Run unit tests (Debug)
+        shell: powershell
+        run: |
+          $testExe = Get-ChildItem -Path bin -Filter "vmlib-test-debug-*.exe" | Select-Object -First 1
+          if (-not $testExe) { throw "Debug test executable not found." }
+          & $testExe.FullName
+          if ($LASTEXITCODE -ne 0) { throw "Debug tests failed with code $LASTEXITCODE" }
+
+      - name: Run unit tests (Release)
+        shell: powershell
+        run: |
+          $testExe = Get-ChildItem -Path bin -Filter "vmlib-test-release-*.exe" | Select-Object -First 1
+          if (-not $testExe) { throw "Release test executable not found." }
+          & $testExe.FullName
+          if ($LASTEXITCODE -ne 0) { throw "Release tests failed with code $LASTEXITCODE" }
