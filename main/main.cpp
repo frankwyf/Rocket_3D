@@ -41,6 +41,12 @@ namespace
 	constexpr float kLevelAdvanceDelay_ = 1.6f;
 	constexpr float kFollowCamSmoothing_ = 8.0f;
 	constexpr float kFollowCamRecentering_ = 1.6f;
+	constexpr float kMaxFuel_ = 100.f;
+	constexpr float kFuelBurnRate_ = 8.f;
+	constexpr float kSteerFuelCost_ = 3.f;
+	constexpr float kCountdownDuration_ = 3.f;
+
+	enum class GamePhase { STARTUP, COUNTDOWN, FLYING, LANDED, FAILED, PAUSED, LEVEL_CLEAR, CAMPAIGN_DONE };
 
 	struct FollowCamPreset
 	{
@@ -303,7 +309,10 @@ namespace
 		float levelTransitionTimer;
 		float followCamSmoothing;
 		float followCamRecentering;
+		float fuel;
+		float countdownTimer;
 		int followCamPreset;
+		GamePhase phase;
 		bool followCamera;
 		bool campaignCleared;
 		bool missionComplete;
@@ -768,6 +777,9 @@ int main() try
 	state.followCamSmoothing = kFollowCamPresets[state.followCamPreset].smoothing;
 	state.followCamRecentering = kFollowCamPresets[state.followCamPreset].recenter;
 	state.followCamera = true;
+	state.fuel = kMaxFuel_;
+	state.countdownTimer = 0.f;
+	state.phase = GamePhase::STARTUP;
 	state.campaignCleared = false;
 	state.missionTimer = kLevels[state.currentLevel].missionTime;
 	state.missionComplete = false;
@@ -935,15 +947,21 @@ int main() try
 
 		//shoot animation
 		if (state.camControl.shoot) {
+			if (state.fuel > 0.f)
+				state.fuel -= kFuelBurnRate_ * dt;
+			if (state.fuel < 0.f) state.fuel = 0.f;
+
 			if (state.camControl.shootTime < 30.f) {
 				state.camControl.shootTime += dt * 6.f * state.launchSpeedScale;
 				if (state.camControl.shootTime > 30.f)
 					state.camControl.shootTime = 30.f;
 			}
-			if (state.camControl.steerLeft) state.camControl.flightOffsetZ -= kRocketSteerPerSecond_ * dt;
-			if (state.camControl.steerRight) state.camControl.flightOffsetZ += kRocketSteerPerSecond_ * dt;
-			if (state.camControl.steerUp) state.camControl.flightOffsetY += (kRocketSteerPerSecond_ * 0.7f) * dt;
-			if (state.camControl.steerDown) state.camControl.flightOffsetY -= (kRocketSteerPerSecond_ * 0.7f) * dt;
+			if (state.fuel > 0.f) {
+				if (state.camControl.steerLeft) { state.camControl.flightOffsetZ -= kRocketSteerPerSecond_ * dt; state.fuel -= kSteerFuelCost_ * dt; }
+				if (state.camControl.steerRight) { state.camControl.flightOffsetZ += kRocketSteerPerSecond_ * dt; state.fuel -= kSteerFuelCost_ * dt; }
+				if (state.camControl.steerUp) { state.camControl.flightOffsetY += (kRocketSteerPerSecond_ * 0.7f) * dt; state.fuel -= kSteerFuelCost_ * dt; }
+				if (state.camControl.steerDown) { state.camControl.flightOffsetY -= (kRocketSteerPerSecond_ * 0.7f) * dt; state.fuel -= kSteerFuelCost_ * dt; }
+			}
 			if (state.camControl.flightOffsetZ < -6.f) state.camControl.flightOffsetZ = -6.f;
 			if (state.camControl.flightOffsetZ > 6.f) state.camControl.flightOffsetZ = 6.f;
 			if (state.camControl.flightOffsetY < -2.5f) state.camControl.flightOffsetY = -2.5f;
@@ -1325,13 +1343,30 @@ int main() try
 		std::snprintf(hudLine1, sizeof(hudLine1), "MODE: %s  LEVEL: %s", state.camControl.testMode ? "TEST" : "GAME", kLevels[state.currentLevel].name);
 		std::snprintf(hudLine2, sizeof(hudLine2), "SCORE: %d  MISSIONS: %d  LAUNCHES: %d", state.score, state.successfulMissions, state.launchCount);
 		std::snprintf(hudLine3, sizeof(hudLine3), "TARGETS: %d/3  BOSS: %d/3  TIMER: %.1fs", collectedCount, bossPassedCount, state.missionTimer);
-		std::snprintf(hudLine4, sizeof(hudLine4), "LAUNCH SPEED: x%.2f  FOLLOW CAM: %s", state.launchSpeedScale, state.followCamera ? "ON" : "OFF");
+		std::snprintf(hudLine4, sizeof(hudLine4), "SPEED: x%.2f  CAM: %s  FUEL: %.0f%%", state.launchSpeedScale, state.followCamera ? "ON" : "OFF", state.fuel);
 		std::snprintf(hudLine5, sizeof(hudLine5), "CAM %s  S/R: %.1f / %.1f  (P, ,/. ;/')", followPresetName, state.followCamSmoothing, state.followCamRecentering);
 		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 20.f, 18.f, 0.94f, 0.94f, 0.94f, hudLine1);
 		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 46.f, 18.f, 0.94f, 0.94f, 0.94f, hudLine2);
 		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 72.f, 18.f, 0.94f, 0.94f, 0.94f, hudLine3);
 		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 98.f, 18.f, 0.84f, 0.93f, 1.0f, hudLine4);
 		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 124.f, 17.f, 0.84f, 0.93f, 1.0f, hudLine5);
+
+		// Fuel bar (top-right)
+		{
+			float fuelFrac = state.fuel / kMaxFuel_;
+			float barW = 0.28f;
+			float barH = 0.025f;
+			float barX = 0.68f;
+			float barY = 0.96f;
+			float fuelR = 1.0f - fuelFrac;
+			float fuelG = fuelFrac;
+			std::vector<Vertex2D> fuelBar;
+			push_rect(fuelBar, barX, barY, barW, barH, 0.15f, 0.15f, 0.15f);
+			push_rect(fuelBar, barX, barY, barW * fuelFrac, barH, fuelR, fuelG, 0.1f);
+			draw_vertices(prog_ui, textBatch, fuelBar);
+			draw_text(prog_ui, textBatch, nwidth, nheight, float(nwidth) - 210.f, 12.f, 14.f, 0.94f, 0.94f, 0.94f, "FUEL");
+		}
+
 		if (state.campaignCleared)
 			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 152.f, 18.f, 0.75f, 1.0f, 0.75f, "CAMPAIGN CLEARED - PRESS R TO RESTART");
 		else if (state.missionComplete)
@@ -1717,7 +1752,11 @@ namespace
 				}
 				state->camControl.flightOffsetY = 0.f;
 				state->camControl.flightOffsetZ = 0.f;
+				state->camControl.followPhi = 0.f;
+				state->camControl.followTheta = 0.f;
 				state->camControl.shoot = true;
+				state->fuel = kMaxFuel_;
+				state->phase = GamePhase::FLYING;
 				state->missionComplete = false;
 				state->missionFailed = false;
 			}
