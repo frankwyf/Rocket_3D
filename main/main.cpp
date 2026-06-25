@@ -1004,9 +1004,13 @@ int main() try
 					{
 						state.missionFailed = true;
 						state.camControl.shoot = false;
+						state.phase = GamePhase::FAILED;
 						break;
 					}
 				}
+
+				int prevCollected = 0;
+				for (bool g : state.targetCollected) if (g) ++prevCollected;
 
 				for (std::size_t i = 0; i < kMissionTargets.size(); ++i)
 				{
@@ -1016,7 +1020,9 @@ int main() try
 					if (dot(d, d) < 2.8f)
 					{
 						state.targetCollected[i] = true;
-						state.score += 100;
+						int combo = prevCollected + 1;
+						state.score += 100 * combo;
+						prevCollected = combo;
 					}
 				}
 
@@ -1048,9 +1054,12 @@ int main() try
 					if (std::fabs(rocketWorldPos.x - 71.f) < 1.8f && std::fabs(rocketWorldPos.y + 0.97f) < 1.2f && std::fabs(rocketWorldPos.z + 1.f) < 1.5f)
 					{
 						state.missionComplete = true;
+						state.phase = GamePhase::LEVEL_CLEAR;
 						state.levelTransitionTimer = 0.f;
 						state.successfulMissions += 1;
-						state.score += 500;
+						int timeBonus = static_cast<int>(state.missionTimer * 10.f);
+						int fuelBonus = static_cast<int>(state.fuel * 5.f);
+						state.score += 500 + timeBonus + fuelBonus;
 					}
 				}
 			}
