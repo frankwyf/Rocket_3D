@@ -62,11 +62,11 @@ namespace
 	};
 
 	constexpr float kStartupGameButtonX = -0.62f;
-	constexpr float kStartupGameButtonY = -0.05f;
+	constexpr float kStartupGameButtonY = -0.75f;
 	constexpr float kStartupButtonWidth = 0.48f;
 	constexpr float kStartupButtonHeight = 0.20f;
 	constexpr float kStartupTestButtonX = 0.14f;
-	constexpr float kStartupTestButtonY = -0.05f;
+	constexpr float kStartupTestButtonY = -0.75f;
 	constexpr float kMissionTimeLimit = 45.f;
 
 	const std::array<Vec3f, 3> kMissionTargets = {
