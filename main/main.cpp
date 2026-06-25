@@ -1402,11 +1402,30 @@ int main() try
 		}
 
 		if (state.campaignCleared)
+		{
 			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 152.f, 18.f, 0.75f, 1.0f, 0.75f, "CAMPAIGN CLEARED - PRESS R TO RESTART");
+			char statsLine[128];
+			std::snprintf(statsLine, sizeof(statsLine), "FINAL SCORE: %d  LAUNCHES: %d  MISSIONS: %d/6",
+				state.score, state.launchCount, state.successfulMissions);
+			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 178.f, 17.f, 0.85f, 0.95f, 0.85f, statsLine);
+		}
 		else if (state.missionComplete)
 			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 152.f, 18.f, 0.75f, 1.0f, 0.75f, "MISSION COMPLETE - AUTO NEXT LEVEL");
 		else if (state.missionFailed)
 			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 152.f, 18.f, 1.0f, 0.70f, 0.70f, "MISSION FAILED - PRESS R TO RETRY");
+
+		// Level progress bar (bottom center)
+		{
+			float progFrac = static_cast<float>(state.currentLevel) / static_cast<float>(kLevels.size());
+			float progW = 0.50f;
+			float progH = 0.018f;
+			float progX = -0.25f;
+			float progY = -0.72f;
+			std::vector<Vertex2D> progBar;
+			push_rect(progBar, progX, progY, progW, progH, 0.12f, 0.12f, 0.18f);
+			push_rect(progBar, progX, progY, progW * progFrac, progH, 0.25f, 0.75f, 0.95f);
+			draw_vertices(prog_ui, textBatch, progBar);
+		}
 
 		// Wait for the results
 		GLuint64 timestamp[4];
