@@ -523,4 +523,81 @@ private:
     int totalBonusAwarded_;
 };
 
+// ============================================================================
+// Fuel Pickup System
+// ============================================================================
+
+struct FuelCanister
+{
+    Vec3f position;
+    float restoreAmount;
+    bool collected;
+    float rotation;
+
+    FuelCanister(Vec3f pos, float amount)
+        : position(pos), restoreAmount(amount), collected(false), rotation(0.0f) {}
+};
+
+class FuelPickupManager
+{
+public:
+    FuelPickupManager() : canisters_() {}
+
+    void addCanister(const FuelCanister& canister)
+    {
+        canisters_.push_back(canister);
+    }
+
+    float checkCollection(Vec3f rocketPos, float pickupRadius)
+    {
+        float totalRestored = 0.0f;
+        for (auto& c : canisters_)
+        {
+            if (c.collected)
+                continue;
+            Vec3f diff = rocketPos - c.position;
+            float distSq = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+            if (distSq < pickupRadius * pickupRadius)
+            {
+                c.collected = true;
+                totalRestored += c.restoreAmount;
+            }
+        }
+        return totalRestored;
+    }
+
+    void update(float deltaTime)
+    {
+        for (auto& c : canisters_)
+        {
+            if (!c.collected)
+                c.rotation += deltaTime * 3.0f;
+        }
+    }
+
+    void resetAll()
+    {
+        for (auto& c : canisters_)
+            c.collected = false;
+    }
+
+    int getRemainingCount() const
+    {
+        int count = 0;
+        for (auto const& c : canisters_)
+            if (!c.collected) ++count;
+        return count;
+    }
+
+    int getTotalCount() const
+    {
+        return static_cast<int>(canisters_.size());
+    }
+
+    const std::vector<FuelCanister>& getCanisters() const { return canisters_; }
+
+private:
+    std::vector<FuelCanister> canisters_;
+};
+
 #endif // GAME_MECHANICS_HPP

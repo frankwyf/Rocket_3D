@@ -28,6 +28,8 @@
 #include "rocket.hpp"
 #include "level_data.hpp"
 #include "text_renderer.hpp"
+#include "ship_builder.hpp"
+#include "game_mechanics.hpp"
 
 
 namespace
@@ -318,145 +320,29 @@ int main() try
 	GLuint landingpad_vao = bind_vao(launchpad_obj);
 	std::size_t landing_vertex = launchpad_obj.vertex_positions.size();
 
-	auto cyl = make_cylinder(true, 8, { 1.f, 0.4f, 0.f },
-		make_rotation_z(3.141592f / 2.f) *
-		make_scaling(0.3f, 0.3f, 0.3f)
-	);
-	auto cy2 = make_cylinder(true, 6, { 0.0f, 0.3f, 0.6f },
-		make_rotation_z(3.141592f / 2.f) *
-		make_scaling(0.6f, 0.2f, 0.2f) *
-		make_translation({ 0.5f, 0.f, 0.f })
-	);
-	auto cy3 = make_cylinder(true, 10, { 0.0f, 0.6f, 0.3f },
-		make_rotation_z(3.141592f / 2.f) *
-		make_scaling(0.5f, 0.15f, 0.15f) *
-		make_translation({ 1.8f, 0.f, 0.f })
-	);
-	auto cy4 = make_cylinder(true, 8, { 1.f, 0.f, 0.6f },
-		make_rotation_z(3.141592f / 2.f) *
-		make_scaling(0.6f, 0.1f, 0.1f) *
-		make_translation({ 2.3f, 0.f, 0.f })
-	);
-	auto cy5 = make_cylinder(true, 4, { 0.3f, 0.8f, 0.6f },
-		make_rotation_y(3.141592f / 6.f * 1.f) *
-		make_rotation_z(3.141592f / 2.f * 1.f) *
-		make_scaling(0.1f, 0.1f, 0.1f) *
-		make_translation({ 5.f, 2.8f, 0.f })
-	);
-	auto cy6 = make_cylinder(true, 4, { 0.3f, 0.4f, 0.2f },
-		make_rotation_y(3.141592f / 6.f * 3.f) *
-		make_rotation_z(3.141592f / 2.f * 1.f) *
-		make_scaling(0.1f, 0.1f, 0.1f) *
-		make_translation({ 5.f, 2.8f, 0.f })
-	);
-	auto cy7 = make_cylinder(true, 4, { 0.3f, 0.8f, 0.6f },
-		make_rotation_y(3.141592f / 6.f * 5.f) *
-		make_rotation_z(3.141592f / 2.f * 1.f) *
-		make_scaling(0.1f, 0.1f, 0.1f) *
-		make_translation({ 5.f, 2.8f, 0.f })
-	);
-	auto cy8 = make_cylinder(true, 4, { 0.3f, 0.2f, 0.6f },
-		make_rotation_y(3.141592f / 6.f * 7.f) *
-		make_rotation_z(3.141592f / 2.f * 1.f) *
-		make_scaling(0.1f, 0.1f, 0.1f) *
-		make_translation({ 5.f, 2.8f, 0.f })
-	);
-	auto cy9 = make_cylinder(true, 4, { 0.3f, 0.8f, 0.6f },
-		make_rotation_y(3.141592f / 6.f * 9.f) *
-		make_rotation_z(3.141592f / 2.f * 1.f) *
-		make_scaling(0.1f, 0.1f, 0.1f) *
-		make_translation({ 5.f, 2.8f, 0.f })
-	);
-	auto cy10 = make_cylinder(true, 4, { 0.3f, 0.4f, 0.2f },
-		make_rotation_y(3.141592f / 6.f * 11.f) *
-		make_rotation_z(3.141592f / 2.f * 1.f) *
-		make_scaling(0.1f, 0.1f, 0.1f) *
-		make_translation({ 5.f, 2.8f, 0.f })
-	);
-
-	// back fire of the ship
-	auto cy11 = make_cone(true, 8, { 1.f, 0.f, 0.6f },
-		make_rotation_z(3.141592f / 2.f) *
-		make_scaling(0.3f, 0.1f, 0.1f) *
-		make_translation({ -1.f, 0.f, 0.f })
-	);
-	auto ship1 = concatenate(std::move(cyl), cy2);
-	auto ship2 = concatenate(std::move(ship1), cy3);
-	auto ship3 = concatenate(std::move(ship2), cy4);
-	auto ship4 = concatenate(std::move(ship3), cy5);
-	auto ship5 = concatenate(std::move(ship4), cy6);
-	auto ship6 = concatenate(std::move(ship5), cy7);
-	auto ship7 = concatenate(std::move(ship6), cy8);
-	auto ship8 = concatenate(std::move(ship7), cy9);
-	auto ship9 = concatenate(std::move(ship8), cy10);
-	auto ship = concatenate(std::move(ship9), cy11);
+	auto ship = ship_builder::build_rocket_body();
 	GLuint ship_vao = bind_vao(ship);
 	std::size_t vertexCount_ship = ship.vertex_positions.size();
 
-	// back fire of the ship
-	auto cy21 = make_cone(true, 8, { 1.f, 0.f, 0.6f },
-		make_rotation_z(3.141592f / 2.f) *
-		make_scaling(0.3f, 0.1f, 0.1f) *
-		make_translation({ -1.f, 0.f, 0.f })
-	);
-	// back fire of the ship
-	auto cy22 = make_cone(true, 8, { 1.f, 0.f, 0.6f },
-		make_rotation_z(3.141592f / 2.f) *
-		make_scaling(0.3f, 0.1f, 0.1f) *
-		make_translation({- 2.f, 0.f, 0.f })
-	);
-	// back fire of the ship
-	auto cy23 = make_cone(true, 8, { 1.f, 0.f, 0.6f },
-		make_rotation_z(3.141592f / 2.f) *
-		make_scaling(0.3f, 0.1f, 0.1f) *
-		make_translation({ -3.f, 0.f, 0.f })
-	);
-	// back fire of the ship
-	auto cy24 = make_cone(true, 8, { 1.f, 0.f, 0.6f },
-		make_rotation_z(3.141592f / 2.f) *
-		make_scaling(0.3f, 0.1f, 0.1f) *
-		make_translation({ -4.f, 0.f, 0.f })
-	);// back fire of the ship
-	auto cy25 = make_cone(true, 8, { 1.f, 0.f, 0.6f },
-		make_rotation_z(3.141592f / 2.f) *
-		make_scaling(0.3f, 0.1f, 0.1f) *
-		make_translation({ -5.f, 0.f, 0.f })
-	);
-	// back fire of the ship
-	auto cy26 = make_cone(true, 8, { 1.f, 0.f, 0.6f },
-		make_rotation_z(3.141592f / 2.f) *
-		make_scaling(0.3f, 0.1f, 0.1f) *
-		make_translation({ -6.f, 0.f, 0.f })
-	);
-	auto ship11 = concatenate(std::move(cy21), cy22);
-	auto ship12 = concatenate(std::move(ship11), cy23);
-	auto ship13 = concatenate(std::move(ship12), cy24);
-	auto ship14 = concatenate(std::move(ship13), cy25);
-	auto ship15 = concatenate(std::move(ship14), cy26);
-	GLuint ship_vao11 = bind_vao(ship15);
-	std::size_t vertexCount_ship11 = ship15.vertex_positions.size();
+	auto exhaustTrail = ship_builder::build_exhaust_trail(6);
+	GLuint ship_vao11 = bind_vao(exhaustTrail);
+	std::size_t vertexCount_ship11 = exhaustTrail.vertex_positions.size();
 
-		auto coinOuter = make_cylinder(true, 28, { 1.0f, 0.84f, 0.16f }, make_scaling(0.44f, 0.08f, 0.44f));
-	auto coinInner = make_cylinder(true, 24, { 1.0f, 0.98f, 0.45f }, make_scaling(0.22f, 0.09f, 0.22f));
-	auto coinStripeA = make_cylinder(true, 12, { 1.0f, 0.98f, 0.78f }, make_scaling(0.07f, 0.10f, 0.30f) * make_rotation_y(kPi_ / 4.f));
-	auto coinStripeB = make_cylinder(true, 12, { 1.0f, 0.98f, 0.78f }, make_scaling(0.07f, 0.10f, 0.30f) * make_rotation_y(-kPi_ / 4.f));
-	auto missionBeacon = concatenate(std::move(coinOuter), coinInner);
-	auto missionBeacon2 = concatenate(std::move(missionBeacon), coinStripeA);
-	auto missionBeacon3 = concatenate(std::move(missionBeacon2), coinStripeB);
+	auto missionBeacon3 = ship_builder::build_mission_beacon();
 	GLuint missionBeaconVao = bind_vao(missionBeacon3);
 	std::size_t missionBeaconVertices = missionBeacon3.vertex_positions.size();
 
-	auto obstacleTop = make_cone(true, 14, { 0.95f, 0.25f, 0.22f }, make_scaling(0.45f, 0.72f, 0.45f));
-	auto obstacleBase = make_cylinder(true, 12, { 0.72f, 0.07f, 0.07f }, make_scaling(0.43f, 0.10f, 0.43f) * make_translation({ 0.f, -0.7f, 0.f }));
-	auto obstacleMesh = concatenate(std::move(obstacleTop), obstacleBase);
+	auto obstacleMesh = ship_builder::build_obstacle_mesh();
 	GLuint obstacleVao = bind_vao(obstacleMesh);
 	std::size_t obstacleVertices = obstacleMesh.vertex_positions.size();
 
-	auto bossOuter = make_cylinder(true, 26, { 0.25f, 0.95f, 0.96f }, make_scaling(0.95f, 0.08f, 0.95f));
-	auto bossInner = make_cylinder(true, 22, { 0.10f, 0.55f, 0.60f }, make_scaling(0.63f, 0.09f, 0.63f));
-	auto bossMesh = concatenate(std::move(bossOuter), bossInner);
+	auto bossMesh = ship_builder::build_boss_gate_mesh();
 	GLuint bossVao = bind_vao(bossMesh);
 	std::size_t bossVertices = bossMesh.vertex_positions.size();
+
+	auto fuelCanisterMesh = ship_builder::build_fuel_canister();
+	GLuint fuelCanisterVao = bind_vao(fuelCanisterMesh);
+	std::size_t fuelCanisterVertices = fuelCanisterMesh.vertex_positions.size();
 
 // build the shader program
 	ShaderProgram prog({
@@ -635,6 +521,12 @@ int main() try
 	state.windowWidth = iwidth;
 	state.windowHeight = iheight;
 
+	FuelPickupManager fuelPickups;
+	fuelPickups.addCanister(FuelCanister(Vec3f{ 22.f, 7.5f, -1.f }, 20.f));
+	fuelPickups.addCanister(FuelCanister(Vec3f{ 42.f, 9.0f, -1.f }, 25.f));
+
+	ComboTracker comboTracker(3.0f, 50.0f);
+
 	auto last = Clock::now();
 
 	float angle = 0.f;
@@ -764,6 +656,8 @@ int main() try
 					state.camControl.shootTime = 0.f;
 					state.camControl.flightOffsetY = 0.f;
 					state.camControl.flightOffsetZ = 0.f;
+					fuelPickups.resetAll();
+					comboTracker.reset();
 				}
 				else
 				{
@@ -848,21 +742,30 @@ int main() try
 				}
 
 				int prevCollected = 0;
-				for (bool g : state.targetCollected) if (g) ++prevCollected;
+					for (bool g : state.targetCollected) if (g) ++prevCollected;
 
-				for (std::size_t i = 0; i < kMissionTargets.size(); ++i)
-				{
-					if (state.targetCollected[i])
-						continue;
-					Vec3f const d = rocketWorldPos - kMissionTargets[i];
-					if (dot(d, d) < 2.8f)
+					for (std::size_t i = 0; i < kMissionTargets.size(); ++i)
 					{
-						state.targetCollected[i] = true;
-						int combo = prevCollected + 1;
-						state.score += 100 * combo;
-						prevCollected = combo;
+						if (state.targetCollected[i])
+							continue;
+						Vec3f const d = rocketWorldPos - kMissionTargets[i];
+						if (dot(d, d) < 2.8f)
+						{
+							state.targetCollected[i] = true;
+							int comboBonus = comboTracker.collect(state.gameplayTime);
+							state.score += 100 + comboBonus;
+							prevCollected++;
+						}
 					}
-				}
+
+					float fuelRestored = fuelPickups.checkCollection(rocketWorldPos, 1.8f);
+					if (fuelRestored > 0.f)
+					{
+						state.fuel += fuelRestored;
+						if (state.fuel > kMaxFuel_) state.fuel = kMaxFuel_;
+					}
+					fuelPickups.update(dt);
+					comboTracker.update(state.gameplayTime);
 
 				bool allCollected = true;
 				for (bool got : state.targetCollected)
@@ -1095,6 +998,20 @@ int main() try
 			glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(bossVertices));
 		}
 
+		for (auto const& canister : fuelPickups.getCanisters())
+		{
+			if (canister.collected)
+				continue;
+			float bob = 0.25f * std::sin(state.gameplayTime * 2.0f);
+			Mat44f canisterModel = make_translation({ canister.position.x, canister.position.y + bob, canister.position.z }) *
+				make_rotation_y(canister.rotation);
+			glUniformMatrix4fv(0, 1, GL_TRUE, (projCameraWorld * canisterModel).v);
+			glUniformMatrix3fv(1, 1, GL_TRUE, normalMatrix.v);
+			glUniformMatrix4fv(11, 1, GL_TRUE, canisterModel.v);
+			glBindVertexArray(fuelCanisterVao);
+			glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(fuelCanisterVertices));
+		}
+
 		glBindVertexArray(0);
 		glUseProgram(0);
 
@@ -1209,6 +1126,7 @@ int main() try
 		char hudLine3[128];
 		char hudLine4[128];
 		char hudLine5[128];
+		char hudLine6[128];
 		char const* followPresetName = (state.followCamPreset >= 0 && state.followCamPreset < static_cast<int>(kFollowCamPresets.size()))
 			? kFollowCamPresets[state.followCamPreset].name
 			: "CUSTOM";
@@ -1217,11 +1135,13 @@ int main() try
 		std::snprintf(hudLine3, sizeof(hudLine3), "TARGETS: %d/3  BOSS: %d/3  TIMER: %.1fs", collectedCount, bossPassedCount, state.missionTimer);
 		std::snprintf(hudLine4, sizeof(hudLine4), "SPEED: x%.2f  CAM: %s  FUEL: %.0f%%", state.launchSpeedScale, state.followCamera ? "ON" : "OFF", state.fuel);
 		std::snprintf(hudLine5, sizeof(hudLine5), "CAM %s  S/R: %.1f / %.1f  (P, ,/. ;/')", followPresetName, state.followCamSmoothing, state.followCamRecentering);
+		std::snprintf(hudLine6, sizeof(hudLine6), "COMBO: x%d  CANISTERS: %d/%d", comboTracker.getComboCount(), fuelPickups.getRemainingCount(), fuelPickups.getTotalCount());
 		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 20.f, 18.f, 0.94f, 0.94f, 0.94f, hudLine1);
 		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 46.f, 18.f, 0.94f, 0.94f, 0.94f, hudLine2);
 		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 72.f, 18.f, 0.94f, 0.94f, 0.94f, hudLine3);
 		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 98.f, 18.f, 0.84f, 0.93f, 1.0f, hudLine4);
 		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 124.f, 17.f, 0.84f, 0.93f, 1.0f, hudLine5);
+		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 150.f, 17.f, 0.30f, 0.95f, 0.45f, hudLine6);
 
 		// Fuel bar (top-right)
 		{

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="debug|x64">
@@ -95,16 +95,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="combo_tracker_tests.cpp" />
+    <ClCompile Include="fuel_pickup_tests.cpp" />
     <ClCompile Include="gameplay_sanity.cpp" />
     <ClCompile Include="game_mechanics_sanity.cpp" />
     <ClCompile Include="level_data_tests.cpp" />
-    <ClCompile Include="text_renderer_tests.cpp" />
-    <ClCompile Include="combo_tracker_tests.cpp" />
     <ClCompile Include="menu_screen_boundaries.cpp" />
     <ClCompile Include="mutiplication.cpp" />
     <ClCompile Include="projection.cpp" />
     <ClCompile Include="rotation.cpp" />
     <ClCompile Include="telemetry_overlay.cpp" />
+    <ClCompile Include="text_renderer_tests.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\vmlib\vmlib.vcxproj">
