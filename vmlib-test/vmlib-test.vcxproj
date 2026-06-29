@@ -99,6 +99,7 @@
     <ClCompile Include="collision_helpers_tests.cpp" />
     <ClCompile Include="combo_tracker_tests.cpp" />
     <ClCompile Include="difficulty_scaler_tests.cpp" />
+    <ClCompile Include="flight_physics_tests.cpp" />
     <ClCompile Include="fuel_pickup_tests.cpp" />
     <ClCompile Include="gameplay_sanity.cpp" />
     <ClCompile Include="game_mechanics_sanity.cpp" />

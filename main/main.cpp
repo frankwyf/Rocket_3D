@@ -33,6 +33,7 @@
 #include "hud_renderer.hpp"
 #include "collision_helpers.hpp"
 #include "scoring_helpers.hpp"
+#include "flight_physics.hpp"
 
 
 namespace
