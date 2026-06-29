@@ -31,6 +31,7 @@
 #include "ship_builder.hpp"
 #include "game_mechanics.hpp"
 #include "hud_renderer.hpp"
+#include "collision_helpers.hpp"
 
 
 namespace
@@ -525,10 +526,12 @@ int main() try
 	FuelPickupManager fuelPickups;
 	fuelPickups.addCanister(FuelCanister(Vec3f{ 22.f, 7.5f, -1.f }, 20.f));
 	fuelPickups.addCanister(FuelCanister(Vec3f{ 42.f, 9.0f, -1.f }, 25.f));
+	fuelPickups.addCanister(FuelCanister(Vec3f{ 55.f, 12.0f, 0.5f }, 30.f));
 
 	ComboTracker comboTracker(3.0f, 50.0f);
 	WindSystem windSystem(0.0f, 1.0f, 0.0f);
 	AchievementTracker achievements;
+	DifficultyScaler diffScaler;
 
 	auto last = Clock::now();
 
@@ -641,7 +644,9 @@ int main() try
 		state.gameplayTime += dt;
 		auto const& level = kLevels[state.currentLevel];
 
-		windSystem.setParameters(level.hard ? 0.8f : 0.0f, 1.0f + level.obstacleMotionScale * 0.5f, level.obstacleMotionScale * 0.4f);
+		diffScaler.setLevel(state.currentLevel);
+		auto diffParams = diffScaler.compute();
+		windSystem.setParameters(diffParams.windBase, 1.0f + level.obstacleMotionScale * 0.5f, diffParams.windGustAmp);
 		windSystem.update(state.gameplayTime);
 
 		if (state.missionComplete && !state.campaignCleared)
@@ -690,7 +695,7 @@ int main() try
 		if (state.camControl.shoot) {
 			achievements.unlock(AchievementId::FIRST_LAUNCH);
 			if (state.fuel > 0.f)
-				state.fuel -= kFuelBurnRate_ * dt;
+				state.fuel -= kFuelBurnRate_ * dt * diffParams.fuelDrainMul;
 			if (state.fuel < 0.f) state.fuel = 0.f;
 
 			if (state.camControl.shootTime < 30.f) {
@@ -698,6 +703,8 @@ int main() try
 				if (state.camControl.shootTime > 30.f)
 					state.camControl.shootTime = 30.f;
 			}
+			if (state.launchSpeedScale >= 1.4f && state.camControl.shootTime > 10.f)
+				achievements.unlock(AchievementId::SPEED_DEMON);
 			if (state.fuel > 0.f) {
 				if (state.camControl.steerLeft) { state.camControl.flightOffsetZ -= kRocketSteerPerSecond_ * dt; state.fuel -= kSteerFuelCost_ * dt; }
 				if (state.camControl.steerRight) { state.camControl.flightOffsetZ += kRocketSteerPerSecond_ * dt; state.fuel -= kSteerFuelCost_ * dt; }
