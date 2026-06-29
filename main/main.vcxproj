@@ -104,6 +104,7 @@
     <ClInclude Include="menu_screen.hpp" />
     <ClInclude Include="rocket.hpp" />
     <ClInclude Include="simple_mesh.hpp" />
+    <ClInclude Include="telemetry_overlay.hpp" />
     <ClInclude Include="ui_system.hpp" />
   </ItemGroup>
   <ItemGroup>
