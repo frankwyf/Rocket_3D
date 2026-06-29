@@ -112,13 +112,18 @@ jobs:
           fail_below_min: false
 
       - name: Publish coverage summary
+        continue-on-error: true
         shell: powershell
         run: |
           $coverage = "${{ steps.coverage.outputs.line_coverage }}"
+          if (-not $env:GITHUB_STEP_SUMMARY) {
+            Write-Warning "GITHUB_STEP_SUMMARY is not available."
+            return
+          }
           Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## Coverage Result"
           Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ""
           Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Line coverage: **$coverage%**"
-          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Report file: `artifacts/coverage/coverage.xml`"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '- Report file: `artifacts/coverage/coverage.xml`'
 
       - name: Enforce coverage threshold
         shell: powershell
