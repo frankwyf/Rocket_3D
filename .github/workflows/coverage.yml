@@ -39,11 +39,29 @@ jobs:
           $testExe = Get-ChildItem -Path bin -Filter "vmlib-test-debug-*.exe" | Select-Object -First 1
           if (-not $testExe) { throw "Debug test executable not found." }
 
-          $coverageExe = Join-Path $env:ProgramFiles "OpenCppCoverage\OpenCppCoverage.exe"
-          if (-not (Test-Path $coverageExe)) {
-            $coverageExe = Join-Path ${env:ProgramFiles(x86)} "OpenCppCoverage\OpenCppCoverage.exe"
+          $coverageExe = $null
+          $coverageCmd = Get-Command OpenCppCoverage.exe -ErrorAction SilentlyContinue
+          if ($coverageCmd) {
+            $coverageExe = $coverageCmd.Source
           }
-          if (-not (Test-Path $coverageExe)) { throw "OpenCppCoverage.exe not found." }
+
+          if (-not $coverageExe) {
+            $candidate = Join-Path $env:ProgramFiles "OpenCppCoverage\OpenCppCoverage.exe"
+            if (Test-Path $candidate) { $coverageExe = $candidate }
+          }
+
+          if (-not $coverageExe) {
+            $candidate = Join-Path ${env:ProgramFiles(x86)} "OpenCppCoverage\OpenCppCoverage.exe"
+            if (Test-Path $candidate) { $coverageExe = $candidate }
+          }
+
+          if (-not $coverageExe) {
+            $candidate = Get-ChildItem -Path "C:\ProgramData\chocolatey\lib" -Filter "OpenCppCoverage.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($candidate) { $coverageExe = $candidate.FullName }
+          }
+
+          if (-not $coverageExe -or -not (Test-Path $coverageExe)) { throw "OpenCppCoverage.exe not found." }
+          Write-Host "Using OpenCppCoverage: $coverageExe"
 
           New-Item -ItemType Directory -Force -Path artifacts/coverage | Out-Null
 
