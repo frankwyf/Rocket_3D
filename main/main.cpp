@@ -34,6 +34,7 @@
 #include "collision_helpers.hpp"
 #include "scoring_helpers.hpp"
 #include "flight_physics.hpp"
+#include "warning_overlay.hpp"
 
 
 namespace
@@ -1214,6 +1215,25 @@ int main() try
 			push_rect(progBar, -0.25f, -0.72f, 0.50f, 0.018f, 0.12f, 0.12f, 0.18f);
 			push_rect(progBar, -0.25f, -0.72f, 0.50f * hud.levelProgress, 0.018f, 0.25f, 0.75f, 0.95f);
 			draw_vertices(prog_ui, textBatch, progBar);
+
+			// Warning overlay
+			if (state.camControl.shoot)
+			{
+				auto ws = warning_overlay::evaluate(hud.fuelFraction, state.missionTimer, state.gameplayTime);
+				if (ws.fuelWarning != warning_overlay::WarningLevel::NONE)
+				{
+					float alpha = ws.flashIntensity * 0.3f;
+					std::vector<Vertex2D> warnRect;
+					push_rect(warnRect, -1.0f, 1.0f, 2.0f, 0.06f, 1.0f, 0.2f, 0.1f);
+					draw_vertices(prog_ui, textBatch, warnRect);
+					draw_text(prog_ui, textBatch, nwidth, nheight, float(nwidth) / 2.f - 60.f, 4.f, 14.f, 1.0f, 0.3f + alpha, 0.1f, "LOW FUEL!");
+				}
+				if (ws.timerWarning != warning_overlay::WarningLevel::NONE)
+				{
+					float alpha = ws.flashIntensity * 0.3f;
+					draw_text(prog_ui, textBatch, nwidth, nheight, float(nwidth) / 2.f - 60.f, float(nheight) - 30.f, 14.f, 1.0f, 0.5f + alpha, 0.1f, "TIME LOW!");
+				}
+			}
 		}
 
 // Poll results without stalling the CPU/GPU pipeline

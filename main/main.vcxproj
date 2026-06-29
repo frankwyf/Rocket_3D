@@ -114,6 +114,7 @@
     <ClInclude Include="telemetry_overlay.hpp" />
     <ClInclude Include="text_renderer.hpp" />
     <ClInclude Include="ui_system.hpp" />
+    <ClInclude Include="warning_overlay.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="load_texture.cpp" />
