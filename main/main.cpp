@@ -32,6 +32,7 @@
 #include "game_mechanics.hpp"
 #include "hud_renderer.hpp"
 #include "collision_helpers.hpp"
+#include "scoring_helpers.hpp"
 
 
 namespace
@@ -151,6 +152,7 @@ namespace
 		bool campaignCleared;
 		bool missionComplete;
 		bool missionFailed;
+		bool steerUsedThisFlight;
 		std::array<bool, 3> targetCollected;
 		std::array<bool, 3> bossGatePassed;
 		struct CamCtrl_
@@ -706,10 +708,10 @@ int main() try
 			if (state.launchSpeedScale >= 1.4f && state.camControl.shootTime > 10.f)
 				achievements.unlock(AchievementId::SPEED_DEMON);
 			if (state.fuel > 0.f) {
-				if (state.camControl.steerLeft) { state.camControl.flightOffsetZ -= kRocketSteerPerSecond_ * dt; state.fuel -= kSteerFuelCost_ * dt; }
-				if (state.camControl.steerRight) { state.camControl.flightOffsetZ += kRocketSteerPerSecond_ * dt; state.fuel -= kSteerFuelCost_ * dt; }
-				if (state.camControl.steerUp) { state.camControl.flightOffsetY += (kRocketSteerPerSecond_ * 0.7f) * dt; state.fuel -= kSteerFuelCost_ * dt; }
-				if (state.camControl.steerDown) { state.camControl.flightOffsetY -= (kRocketSteerPerSecond_ * 0.7f) * dt; state.fuel -= kSteerFuelCost_ * dt; }
+				if (state.camControl.steerLeft) { state.camControl.flightOffsetZ -= kRocketSteerPerSecond_ * dt; state.fuel -= kSteerFuelCost_ * dt; state.steerUsedThisFlight = true; }
+				if (state.camControl.steerRight) { state.camControl.flightOffsetZ += kRocketSteerPerSecond_ * dt; state.fuel -= kSteerFuelCost_ * dt; state.steerUsedThisFlight = true; }
+				if (state.camControl.steerUp) { state.camControl.flightOffsetY += (kRocketSteerPerSecond_ * 0.7f) * dt; state.fuel -= kSteerFuelCost_ * dt; state.steerUsedThisFlight = true; }
+				if (state.camControl.steerDown) { state.camControl.flightOffsetY -= (kRocketSteerPerSecond_ * 0.7f) * dt; state.fuel -= kSteerFuelCost_ * dt; state.steerUsedThisFlight = true; }
 			}
 			state.camControl.flightOffsetZ += windSystem.getCurrentOffset() * dt;
 			if (state.camControl.flightOffsetZ < -6.f) state.camControl.flightOffsetZ = -6.f;
@@ -815,16 +817,17 @@ int main() try
 				if (allCollected && allBossPassed && state.camControl.shootTime >= 29.8f)
 				{
 					if (std::fabs(rocketWorldPos.x - 71.f) < 1.8f && std::fabs(rocketWorldPos.y + 0.97f) < 1.2f && std::fabs(rocketWorldPos.z + 1.f) < 1.5f)
-					{
-						state.missionComplete = true;
-								state.phase = GamePhase::LEVEL_CLEAR;
-								state.levelTransitionTimer = 0.f;
-								state.successfulMissions += 1;
-								int timeBonus = static_cast<int>(state.missionTimer * 10.f);
-								int fuelBonus = static_cast<int>(state.fuel * 5.f);
-								state.score += 500 + timeBonus + fuelBonus;
-								achievements.unlock(AchievementId::FIRST_LANDING);
-					}
+						{
+							state.missionComplete = true;
+									state.phase = GamePhase::LEVEL_CLEAR;
+									state.levelTransitionTimer = 0.f;
+									state.successfulMissions += 1;
+									auto missionBonus = scoring::compute_mission_score(state.missionTimer, state.fuel, comboTracker.getTotalBonus());
+									state.score += missionBonus.total;
+									achievements.unlock(AchievementId::FIRST_LANDING);
+									if (!state.steerUsedThisFlight)
+										achievements.unlock(AchievementId::NO_STEERING);
+						}
 				}
 			}
 		}
@@ -1592,12 +1595,13 @@ namespace
 					state->camControl.flightOffsetZ = 0.f;
 					state->camControl.followPhi = 0.f;
 					state->camControl.followTheta = 0.f;
-						state->camControl.shoot = true;
-						state->fuel = kMaxFuel_;
-						state->phase = GamePhase::FLYING;
-						state->missionComplete = false;
-						state->missionFailed = false;
-					}
+							state->camControl.shoot = true;
+							state->fuel = kMaxFuel_;
+							state->phase = GamePhase::FLYING;
+							state->missionComplete = false;
+							state->missionFailed = false;
+							state->steerUsedThisFlight = false;
+						}
 			else if (GLFW_KEY_R == aKey && GLFW_PRESS == aAction)
 			{
 				state->camControl.shoot = false;

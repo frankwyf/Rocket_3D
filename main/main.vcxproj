@@ -107,6 +107,7 @@
     <ClInclude Include="menu_screen.hpp" />
     <ClInclude Include="replay_export.hpp" />
     <ClInclude Include="rocket.hpp" />
+    <ClInclude Include="scoring_helpers.hpp" />
     <ClInclude Include="ship_builder.hpp" />
     <ClInclude Include="simple_mesh.hpp" />
     <ClInclude Include="telemetry_overlay.hpp" />

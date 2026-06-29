@@ -108,6 +108,7 @@
     <ClCompile Include="mutiplication.cpp" />
     <ClCompile Include="projection.cpp" />
     <ClCompile Include="rotation.cpp" />
+    <ClCompile Include="scoring_helpers_tests.cpp" />
     <ClCompile Include="telemetry_overlay.cpp" />
     <ClCompile Include="text_renderer_tests.cpp" />
     <ClCompile Include="wind_system_tests.cpp" />
