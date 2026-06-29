@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="debug|x64">
@@ -99,6 +99,7 @@
     <ClInclude Include="defaults.hpp" />
     <ClInclude Include="game_config.hpp" />
     <ClInclude Include="game_mechanics.hpp" />
+    <ClInclude Include="level_data.hpp" />
     <ClInclude Include="load_texture.hpp" />
     <ClInclude Include="loadobj.hpp" />
     <ClInclude Include="menu_screen.hpp" />
@@ -106,6 +107,7 @@
     <ClInclude Include="rocket.hpp" />
     <ClInclude Include="simple_mesh.hpp" />
     <ClInclude Include="telemetry_overlay.hpp" />
+    <ClInclude Include="text_renderer.hpp" />
     <ClInclude Include="ui_system.hpp" />
   </ItemGroup>
   <ItemGroup>

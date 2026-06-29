@@ -465,4 +465,62 @@ private:
     bool isRecording_;
 };
 
+// ============================================================================
+// Combo Tracker
+// ============================================================================
+
+class ComboTracker
+{
+public:
+    ComboTracker(float comboWindow = 3.0f, float bonusPerLevel = 50.0f)
+        : comboWindow_(comboWindow), bonusPerLevel_(bonusPerLevel),
+          comboCount_(0), comboTimer_(0.0f), totalBonusAwarded_(0) {}
+
+    int collect(float currentTime)
+    {
+        if (comboCount_ > 0 && (currentTime - comboTimer_) > comboWindow_)
+        {
+            comboCount_ = 0;
+        }
+
+        comboCount_++;
+        comboTimer_ = currentTime;
+
+        int bonus = static_cast<int>(bonusPerLevel_ * comboCount_);
+        totalBonusAwarded_ += bonus;
+        return bonus;
+    }
+
+    void update(float currentTime)
+    {
+        if (comboCount_ > 0 && (currentTime - comboTimer_) > comboWindow_)
+        {
+            comboCount_ = 0;
+        }
+    }
+
+    void reset()
+    {
+        comboCount_ = 0;
+        comboTimer_ = 0.0f;
+        totalBonusAwarded_ = 0;
+    }
+
+    int getComboCount() const { return comboCount_; }
+    int getTotalBonus() const { return totalBonusAwarded_; }
+    float getComboWindow() const { return comboWindow_; }
+    float getTimeSinceLast() const { return comboTimer_; }
+    bool isComboActive(float currentTime) const
+    {
+        return comboCount_ > 0 && (currentTime - comboTimer_) <= comboWindow_;
+    }
+
+private:
+    float comboWindow_;
+    float bonusPerLevel_;
+    int comboCount_;
+    float comboTimer_;
+    int totalBonusAwarded_;
+};
+
 #endif // GAME_MECHANICS_HPP
