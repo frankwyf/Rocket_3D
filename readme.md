@@ -6,9 +6,10 @@ An interactive 3D rocket flight simulator built with `C++17`, `OpenGL 4.3`, and 
 
 - English usage guide: [`docs/usage.en.md`](docs/usage.en.md)
 - How to play (English): [`docs/HOW_TO_PLAY.md`](docs/HOW_TO_PLAY.md)
-- 中文使用说明: [`docs/usage.zh-CN.md`](docs/usage.zh-CN.md)
+- 中文使用说脕E [`docs/usage.zh-CN.md`](docs/usage.zh-CN.md)
 - 日本語ガイド: [`docs/usage.ja.md`](docs/usage.ja.md)
 - Development notes: [`DEVELOPMENT.md`](DEVELOPMENT.md)
+- 慡柺彙???乮拞暥乯: [`docs/upgrade-plan.zh-CN.md`](docs/upgrade-plan.zh-CN.md)
 - Project knowledge base (consolidated from report content): [`docs/knowledge-base.md`](docs/knowledge-base.md)
 - Contribution guide: [`CONTRIBUTING.md`](CONTRIBUTING.md)
 - Third-party licenses: [`third_party.md`](third_party.md)

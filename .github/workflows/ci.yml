@@ -5,10 +5,15 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+  workflow_dispatch:
 
 jobs:
   build-and-test-windows:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
 
     steps:
       - name: Checkout
@@ -17,26 +22,32 @@ jobs:
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      - name: Build Release
+      - name: Build ${{ matrix.configuration }}
         shell: powershell
-        run: msbuild Rocket3D.sln /p:Configuration=Release /p:Platform=x64 /m
+        run: msbuild Rocket3D.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=x64 /m
 
-      - name: Build Debug
-        shell: powershell
-        run: msbuild Rocket3D.sln /p:Configuration=Debug /p:Platform=x64 /m
-
-      - name: Run unit tests (Debug)
+      - name: Run unit tests (${{ matrix.configuration }})
         shell: powershell
         run: |
-          $testExe = Get-ChildItem -Path bin -Filter "vmlib-test-debug-*.exe" | Select-Object -First 1
-          if (-not $testExe) { throw "Debug test executable not found." }
-          & $testExe.FullName
-          if ($LASTEXITCODE -ne 0) { throw "Debug tests failed with code $LASTEXITCODE" }
+          $config = "${{ matrix.configuration }}".ToLowerInvariant()
+          $testExe = Get-ChildItem -Path bin -Filter "vmlib-test-$config-*.exe" | Select-Object -First 1
+          if (-not $testExe) { throw "$config test executable not found." }
+          New-Item -ItemType Directory -Force -Path artifacts/test-results | Out-Null
+          & $testExe.FullName --reporter junit --out "artifacts/test-results/$config-tests.xml"
+          if ($LASTEXITCODE -ne 0) { throw "$config tests failed with code $LASTEXITCODE" }
 
-      - name: Run unit tests (Release)
-        shell: powershell
-        run: |
-          $testExe = Get-ChildItem -Path bin -Filter "vmlib-test-release-*.exe" | Select-Object -First 1
-          if (-not $testExe) { throw "Release test executable not found." }
-          & $testExe.FullName
-          if ($LASTEXITCODE -ne 0) { throw "Release tests failed with code $LASTEXITCODE" }
+      - name: Upload test reports (${{ matrix.configuration }})
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-report-${{ matrix.configuration }}
+          path: artifacts/test-results/*.xml
+
+      - name: Upload executable artifact (${{ matrix.configuration }})
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: rocket3d-bin-${{ matrix.configuration }}
+          path: |
+            bin/main-*.exe
+            bin/vmlib-test-*.exe
