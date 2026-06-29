@@ -30,6 +30,7 @@
 #include "text_renderer.hpp"
 #include "ship_builder.hpp"
 #include "game_mechanics.hpp"
+#include "hud_renderer.hpp"
 
 
 namespace
@@ -1130,81 +1131,79 @@ int main() try
 		draw_text_centered_in_ndc_rect(prog_ui, textBatch, nwidth, nheight, x1, y11, width1, height1, 18.f, 0.08f, 0.08f, 0.08f, "LAUNCH");
 		draw_text_centered_in_ndc_rect(prog_ui, textBatch, nwidth, nheight, x2, y2, width1, height1, 18.f, 0.08f, 0.08f, 0.08f, "RESET");
 
-		int collectedCount = 0;
-		for (bool got : state.targetCollected)
-			if (got) ++collectedCount;
-		int bossPassedCount =  0;
-		for (bool p : state.bossGatePassed)
-			if (p) ++bossPassedCount;
-		char hudLine1[128];
-		char hudLine2[128];
-		char hudLine3[128];
-		char hudLine4[128];
-		char hudLine5[128];
-		char hudLine6[128];
-		char const* followPresetName = (state.followCamPreset >= 0 && state.followCamPreset < static_cast<int>(kFollowCamPresets.size()))
-			? kFollowCamPresets[state.followCamPreset].name
-			: "CUSTOM";
-		std::snprintf(hudLine1, sizeof(hudLine1), "MODE: %s  LEVEL: %s", state.camControl.testMode ? "TEST" : "GAME", kLevels[state.currentLevel].name);
-		std::snprintf(hudLine2, sizeof(hudLine2), "SCORE: %d  MISSIONS: %d  LAUNCHES: %d", state.score, state.successfulMissions, state.launchCount);
-		std::snprintf(hudLine3, sizeof(hudLine3), "TARGETS: %d/3  BOSS: %d/3  TIMER: %.1fs", collectedCount, bossPassedCount, state.missionTimer);
-		std::snprintf(hudLine4, sizeof(hudLine4), "SPEED: x%.2f  CAM: %s  FUEL: %.0f%%", state.launchSpeedScale, state.followCamera ? "ON" : "OFF", state.fuel);
-		std::snprintf(hudLine5, sizeof(hudLine5), "CAM %s  S/R: %.1f / %.1f  (P, ,/. ;/')", followPresetName, state.followCamSmoothing, state.followCamRecentering);
-		std::snprintf(hudLine6, sizeof(hudLine6), "COMBO: x%d  CANISTERS: %d/%d", comboTracker.getComboCount(), fuelPickups.getRemainingCount(), fuelPickups.getTotalCount());
-		char hudLine7[128];
-		char hudLine8[128];
-		std::snprintf(hudLine7, sizeof(hudLine7), "WIND: %+.1f  ACHIEVE: %d/%d", windSystem.getCurrentOffset(), achievements.getUnlockedCount(), achievements.getTotalCount());
-		std::snprintf(hudLine8, sizeof(hudLine8), "TIME: %.1fs  PHASE: %s", state.gameplayTime, state.camControl.shoot ? "FLIGHT" : "IDLE");
-		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 20.f, 18.f, 0.94f, 0.94f, 0.94f, hudLine1);
-		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 44.f, 18.f, 0.94f, 0.94f, 0.94f, hudLine2);
-		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 68.f, 18.f, 0.94f, 0.94f, 0.94f, hudLine3);
-		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 92.f, 18.f, 0.84f, 0.93f, 1.0f, hudLine4);
-		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 116.f, 17.f, 0.84f, 0.93f, 1.0f, hudLine5);
-		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 140.f, 17.f, 0.30f, 0.95f, 0.45f, hudLine6);
-		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 164.f, 17.f, 0.65f, 0.80f, 1.0f, hudLine7);
-		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 188.f, 17.f, 0.75f, 0.75f, 0.75f, hudLine8);
-
-		// Fuel bar (top-right)
 		{
-			float fuelFrac = state.fuel / kMaxFuel_;
-			float barW = 0.28f;
-			float barH = 0.025f;
-			float barX = 0.68f;
-			float barY = 0.96f;
-			float fuelR = 1.0f - fuelFrac;
-			float fuelG = fuelFrac;
+			int collectedCount = 0;
+			for (bool got : state.targetCollected) if (got) ++collectedCount;
+			int bossPassedCount = 0;
+			for (bool p : state.bossGatePassed) if (p) ++bossPassedCount;
+			char const* followPresetName = (state.followCamPreset >= 0 && state.followCamPreset < static_cast<int>(kFollowCamPresets.size()))
+				? kFollowCamPresets[state.followCamPreset].name : "CUSTOM";
+
+			hud_renderer::HudInput hi{};
+			hi.testMode = state.camControl.testMode;
+			hi.levelName = kLevels[state.currentLevel].name;
+			hi.score = state.score;
+			hi.successfulMissions = state.successfulMissions;
+			hi.launchCount = state.launchCount;
+			hi.collectedCount = collectedCount;
+			hi.bossPassedCount = bossPassedCount;
+			hi.missionTimer = state.missionTimer;
+			hi.launchSpeedScale = state.launchSpeedScale;
+			hi.followCamera = state.followCamera;
+			hi.fuel = state.fuel;
+			hi.maxFuel = kMaxFuel_;
+			hi.camPresetName = followPresetName;
+			hi.followCamSmoothing = state.followCamSmoothing;
+			hi.followCamRecentering = state.followCamRecentering;
+			hi.comboCount = comboTracker.getComboCount();
+			hi.fuelRemaining = fuelPickups.getRemainingCount();
+			hi.fuelTotal = fuelPickups.getTotalCount();
+			hi.windOffset = windSystem.getCurrentOffset();
+			hi.achieveUnlocked = achievements.getUnlockedCount();
+			hi.achieveTotal = achievements.getTotalCount();
+			hi.gameplayTime = state.gameplayTime;
+			hi.inFlight = state.camControl.shoot;
+			hi.currentLevel = state.currentLevel;
+			hi.totalLevels = static_cast<int>(kLevels.size());
+			hi.campaignCleared = state.campaignCleared;
+			hi.missionComplete = state.missionComplete;
+			hi.missionFailed = state.missionFailed;
+
+			auto hud = hud_renderer::compute_hud(hi);
+			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 20.f, 18.f, 0.94f, 0.94f, 0.94f, hud.line1);
+			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 44.f, 18.f, 0.94f, 0.94f, 0.94f, hud.line2);
+			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 68.f, 18.f, 0.94f, 0.94f, 0.94f, hud.line3);
+			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 92.f, 18.f, 0.84f, 0.93f, 1.0f, hud.line4);
+			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 116.f, 17.f, 0.84f, 0.93f, 1.0f, hud.line5);
+			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 140.f, 17.f, 0.30f, 0.95f, 0.45f, hud.line6);
+			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 164.f, 17.f, 0.65f, 0.80f, 1.0f, hud.line7);
+			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 188.f, 17.f, 0.75f, 0.75f, 0.75f, hud.line8);
+
+			// Fuel bar (top-right)
+			float fuelR = 1.0f - hud.fuelFraction;
+			float fuelG = hud.fuelFraction;
 			std::vector<Vertex2D> fuelBar;
-			push_rect(fuelBar, barX, barY, barW, barH, 0.15f, 0.15f, 0.15f);
-			push_rect(fuelBar, barX, barY, barW * fuelFrac, barH, fuelR, fuelG, 0.1f);
+			push_rect(fuelBar, 0.68f, 0.96f, 0.28f, 0.025f, 0.15f, 0.15f, 0.15f);
+			push_rect(fuelBar, 0.68f, 0.96f, 0.28f * hud.fuelFraction, 0.025f, fuelR, fuelG, 0.1f);
 			draw_vertices(prog_ui, textBatch, fuelBar);
 			draw_text(prog_ui, textBatch, nwidth, nheight, float(nwidth) - 210.f, 12.f, 14.f, 0.94f, 0.94f, 0.94f, "FUEL");
-		}
 
-		if (state.campaignCleared)
-		{
-			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 218.f, 18.f, 0.75f, 1.0f, 0.75f, "CAMPAIGN CLEARED - PRESS R TO RESTART");
-			char statsLine[128];
-			std::snprintf(statsLine, sizeof(statsLine), "FINAL SCORE: %d  LAUNCHES: %d  MISSIONS: %d/6  ACHIEVE: %d/%d",
-				state.score, state.launchCount, state.successfulMissions, achievements.getUnlockedCount(), achievements.getTotalCount());
-			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 244.f, 17.f, 0.85f, 0.95f, 0.85f, statsLine);
-		}
-		else if (state.missionComplete)
-			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 218.f, 18.f, 0.75f, 1.0f, 0.75f, "MISSION COMPLETE - AUTO NEXT LEVEL");
-		else if (state.missionFailed)
-			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 218.f, 18.f, 1.0f, 0.70f, 0.70f, "MISSION FAILED - PRESS R TO RETRY");
+			if (state.campaignCleared)
+			{
+				draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 218.f, 18.f, 0.75f, 1.0f, 0.75f, "CAMPAIGN CLEARED - PRESS R TO RESTART");
+				draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 244.f, 17.f, 0.85f, 0.95f, 0.85f, hud.statusLine);
+			}
+			else if (state.missionComplete)
+				draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 218.f, 18.f, 0.75f, 1.0f, 0.75f, "MISSION COMPLETE - AUTO NEXT LEVEL");
+			else if (state.missionFailed)
+				draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 218.f, 18.f, 1.0f, 0.70f, 0.70f, "MISSION FAILED - PRESS R TO RETRY");
 
-// Level progress bar (bottom center)
-{
-	float progFrac = static_cast<float>(state.currentLevel) / static_cast<float>(kLevels.size());
-	float progW = 0.50f;
-	float progH = 0.018f;
-	float progX = -0.25f;
-	float progY = -0.72f;
-	std::vector<Vertex2D> progBar;
-	push_rect(progBar, progX, progY, progW, progH, 0.12f, 0.12f, 0.18f);
-	push_rect(progBar, progX, progY, progW * progFrac, progH, 0.25f, 0.75f, 0.95f);
-	draw_vertices(prog_ui, textBatch, progBar);
-}
+			// Level progress bar (bottom center)
+			std::vector<Vertex2D> progBar;
+			push_rect(progBar, -0.25f, -0.72f, 0.50f, 0.018f, 0.12f, 0.12f, 0.18f);
+			push_rect(progBar, -0.25f, -0.72f, 0.50f * hud.levelProgress, 0.018f, 0.25f, 0.75f, 0.95f);
+			draw_vertices(prog_ui, textBatch, progBar);
+		}
 
 // Poll results without stalling the CPU/GPU pipeline
 GLuint64 timestamp[4]{};

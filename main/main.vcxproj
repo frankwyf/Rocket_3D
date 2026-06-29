@@ -99,6 +99,7 @@
     <ClInclude Include="defaults.hpp" />
     <ClInclude Include="game_config.hpp" />
     <ClInclude Include="game_mechanics.hpp" />
+    <ClInclude Include="hud_renderer.hpp" />
     <ClInclude Include="level_data.hpp" />
     <ClInclude Include="load_texture.hpp" />
     <ClInclude Include="loadobj.hpp" />

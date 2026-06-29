@@ -708,4 +708,42 @@ private:
     std::array<bool, static_cast<std::size_t>(AchievementId::COUNT)> unlocked_;
 };
 
+// ============================================================================
+// Difficulty Scaler
+// ============================================================================
+
+struct DifficultyParams
+{
+    float windBase;
+    float windGustAmp;
+    float obstacleSpeedMul;
+    float missionTimeBonus;
+    float fuelDrainMul;
+};
+
+class DifficultyScaler
+{
+public:
+    DifficultyScaler() : level_(0) {}
+
+    void setLevel(int level) { level_ = level; }
+    int getLevel() const { return level_; }
+
+    DifficultyParams compute() const
+    {
+        DifficultyParams p{};
+        float t = static_cast<float>(level_) / 5.0f; // normalised 0..1 over 6 levels
+        if (t > 1.0f) t = 1.0f;
+        p.windBase = t * 1.0f;
+        p.windGustAmp = t * 0.6f;
+        p.obstacleSpeedMul = 1.0f + t * 1.5f;
+        p.missionTimeBonus = (1.0f - t) * 10.0f;
+        p.fuelDrainMul = 1.0f + t * 0.5f;
+        return p;
+    }
+
+private:
+    int level_;
+};
+
 #endif // GAME_MECHANICS_HPP
