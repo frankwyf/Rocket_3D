@@ -108,6 +108,27 @@ TEST_CASE("Replay timestamp validator catches disorder", "[mechanics][replay]")
     REQUIRE_FALSE(replay_export::validate_monotonic_timestamps(disordered));
 }
 
+TEST_CASE("Replay analytics estimate duration and path length", "[mechanics][replay]")
+{
+    std::vector<FlightFrame> frames;
+    frames.push_back({ 1.0f, Vec3f{ 0.0f, 0.0f, 0.0f }, Vec3f{ 0.0f, 0.0f, 0.0f }, 0.0f, 0.0f });
+    frames.push_back({ 2.5f, Vec3f{ 3.0f, 0.0f, 4.0f }, Vec3f{ 0.0f, 0.0f, 0.0f }, 0.0f, 0.0f });
+    frames.push_back({ 4.0f, Vec3f{ 3.0f, 4.0f, 4.0f }, Vec3f{ 0.0f, 0.0f, 0.0f }, 0.0f, 0.0f });
+
+    float duration = replay_export::estimate_duration_seconds(frames);
+    float path = replay_export::estimate_path_length(frames);
+
+    REQUIRE(duration == Catch::Approx(3.0f));
+    REQUIRE(path == Catch::Approx(9.0f));
+
+    std::vector<FlightFrame> singleFrame = {
+        { 5.0f, Vec3f{ 1.0f, 2.0f, 3.0f }, Vec3f{ 0.0f, 0.0f, 0.0f }, 0.0f, 0.0f }
+    };
+
+    REQUIRE(replay_export::estimate_duration_seconds(singleFrame) == Catch::Approx(0.0f));
+    REQUIRE(replay_export::estimate_path_length(singleFrame) == Catch::Approx(0.0f));
+}
+
 TEST_CASE("Particle emitter respects capacity and removes expired particles", "[mechanics][particle]")
 {
     ParticleEmitter emitter(Vec3f{ 0.0f, 0.0f, 0.0f }, 3);

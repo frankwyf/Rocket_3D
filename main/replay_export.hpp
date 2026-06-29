@@ -4,6 +4,7 @@
 #include <vector>
 #include <sstream>
 #include <iomanip>
+#include <cmath>
 
 #include "game_mechanics.hpp"
 
@@ -38,5 +39,30 @@ namespace replay_export
                 return false;
         }
         return true;
+    }
+
+    inline float estimate_duration_seconds(const std::vector<FlightFrame>& frames)
+    {
+        if (frames.size() < 2)
+            return 0.0f;
+
+        float duration = frames.back().timestamp - frames.front().timestamp;
+        return duration > 0.0f ? duration : 0.0f;
+    }
+
+    inline float estimate_path_length(const std::vector<FlightFrame>& frames)
+    {
+        if (frames.size() < 2)
+            return 0.0f;
+
+        float total = 0.0f;
+        for (std::size_t i = 1; i < frames.size(); ++i)
+        {
+            float dx = frames[i].position.x - frames[i - 1].position.x;
+            float dy = frames[i].position.y - frames[i - 1].position.y;
+            float dz = frames[i].position.z - frames[i - 1].position.z;
+            total += std::sqrt(dx * dx + dy * dy + dz * dz);
+        }
+        return total;
     }
 }
