@@ -600,4 +600,112 @@ private:
     std::vector<FuelCanister> canisters_;
 };
 
+// ============================================================================
+// Wind System
+// ============================================================================
+
+class WindSystem
+{
+public:
+    WindSystem(float baseStrength = 0.0f, float gustFrequency = 1.0f, float gustAmplitude = 0.5f)
+        : baseStrength_(baseStrength), gustFrequency_(gustFrequency),
+          gustAmplitude_(gustAmplitude), currentOffset_(0.0f) {}
+
+    void setParameters(float base, float freq, float amp)
+    {
+        baseStrength_ = base;
+        gustFrequency_ = freq;
+        gustAmplitude_ = amp;
+    }
+
+    float computeOffset(float timeS) const
+    {
+        float gust = gustAmplitude_ * std::sin(timeS * gustFrequency_ * 2.0f)
+                   + gustAmplitude_ * 0.5f * std::sin(timeS * gustFrequency_ * 4.7f);
+        return baseStrength_ + gust;
+    }
+
+    void update(float timeS)
+    {
+        currentOffset_ = computeOffset(timeS);
+    }
+
+    float getCurrentOffset() const { return currentOffset_; }
+    float getBaseStrength() const { return baseStrength_; }
+    float getGustFrequency() const { return gustFrequency_; }
+    float getGustAmplitude() const { return gustAmplitude_; }
+
+private:
+    float baseStrength_;
+    float gustFrequency_;
+    float gustAmplitude_;
+    float currentOffset_;
+};
+
+// ============================================================================
+// Achievement Tracker
+// ============================================================================
+
+enum class AchievementId
+{
+    FIRST_LAUNCH,
+    FIRST_LANDING,
+    COMBO_3,
+    COMBO_5,
+    ALL_FUEL_COLLECTED,
+    NO_STEERING,
+    SPEED_DEMON,
+    CAMPAIGN_COMPLETE,
+    COUNT
+};
+
+class AchievementTracker
+{
+public:
+    AchievementTracker()
+    {
+        unlocked_.fill(false);
+    }
+
+    bool unlock(AchievementId id)
+    {
+        int idx = static_cast<int>(id);
+        if (idx < 0 || idx >= static_cast<int>(AchievementId::COUNT))
+            return false;
+        if (unlocked_[idx])
+            return false;
+        unlocked_[idx] = true;
+        return true;
+    }
+
+    bool isUnlocked(AchievementId id) const
+    {
+        int idx = static_cast<int>(id);
+        if (idx < 0 || idx >= static_cast<int>(AchievementId::COUNT))
+            return false;
+        return unlocked_[idx];
+    }
+
+    int getUnlockedCount() const
+    {
+        int count = 0;
+        for (bool u : unlocked_)
+            if (u) ++count;
+        return count;
+    }
+
+    int getTotalCount() const
+    {
+        return static_cast<int>(AchievementId::COUNT);
+    }
+
+    void reset()
+    {
+        unlocked_.fill(false);
+    }
+
+private:
+    std::array<bool, static_cast<std::size_t>(AchievementId::COUNT)> unlocked_;
+};
+
 #endif // GAME_MECHANICS_HPP

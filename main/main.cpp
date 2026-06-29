@@ -526,6 +526,8 @@ int main() try
 	fuelPickups.addCanister(FuelCanister(Vec3f{ 42.f, 9.0f, -1.f }, 25.f));
 
 	ComboTracker comboTracker(3.0f, 50.0f);
+	WindSystem windSystem(0.0f, 1.0f, 0.0f);
+	AchievementTracker achievements;
 
 	auto last = Clock::now();
 
@@ -638,6 +640,9 @@ int main() try
 		state.gameplayTime += dt;
 		auto const& level = kLevels[state.currentLevel];
 
+		windSystem.setParameters(level.hard ? 0.8f : 0.0f, 1.0f + level.obstacleMotionScale * 0.5f, level.obstacleMotionScale * 0.4f);
+		windSystem.update(state.gameplayTime);
+
 		if (state.missionComplete && !state.campaignCleared)
 		{
 			state.levelTransitionTimer += dt;
@@ -662,7 +667,8 @@ int main() try
 				else
 				{
 					state.campaignCleared = true;
-				}
+						achievements.unlock(AchievementId::CAMPAIGN_COMPLETE);
+					}
 			}
 		}
 
@@ -681,6 +687,7 @@ int main() try
 
 		//shoot animation
 		if (state.camControl.shoot) {
+			achievements.unlock(AchievementId::FIRST_LAUNCH);
 			if (state.fuel > 0.f)
 				state.fuel -= kFuelBurnRate_ * dt;
 			if (state.fuel < 0.f) state.fuel = 0.f;
@@ -696,6 +703,7 @@ int main() try
 				if (state.camControl.steerUp) { state.camControl.flightOffsetY += (kRocketSteerPerSecond_ * 0.7f) * dt; state.fuel -= kSteerFuelCost_ * dt; }
 				if (state.camControl.steerDown) { state.camControl.flightOffsetY -= (kRocketSteerPerSecond_ * 0.7f) * dt; state.fuel -= kSteerFuelCost_ * dt; }
 			}
+			state.camControl.flightOffsetZ += windSystem.getCurrentOffset() * dt;
 			if (state.camControl.flightOffsetZ < -6.f) state.camControl.flightOffsetZ = -6.f;
 			if (state.camControl.flightOffsetZ > 6.f) state.camControl.flightOffsetZ = 6.f;
 			if (state.camControl.flightOffsetY < -2.5f) state.camControl.flightOffsetY = -2.5f;
@@ -764,8 +772,14 @@ int main() try
 						state.fuel += fuelRestored;
 						if (state.fuel > kMaxFuel_) state.fuel = kMaxFuel_;
 					}
+					if (fuelPickups.getTotalCount() > 0 && fuelPickups.getRemainingCount() == 0)
+						achievements.unlock(AchievementId::ALL_FUEL_COLLECTED);
 					fuelPickups.update(dt);
 					comboTracker.update(state.gameplayTime);
+					if (comboTracker.getComboCount() >= 3)
+						achievements.unlock(AchievementId::COMBO_3);
+					if (comboTracker.getComboCount() >= 5)
+						achievements.unlock(AchievementId::COMBO_5);
 
 				bool allCollected = true;
 				for (bool got : state.targetCollected)
@@ -795,12 +809,13 @@ int main() try
 					if (std::fabs(rocketWorldPos.x - 71.f) < 1.8f && std::fabs(rocketWorldPos.y + 0.97f) < 1.2f && std::fabs(rocketWorldPos.z + 1.f) < 1.5f)
 					{
 						state.missionComplete = true;
-						state.phase = GamePhase::LEVEL_CLEAR;
-						state.levelTransitionTimer = 0.f;
-						state.successfulMissions += 1;
-						int timeBonus = static_cast<int>(state.missionTimer * 10.f);
-						int fuelBonus = static_cast<int>(state.fuel * 5.f);
-						state.score += 500 + timeBonus + fuelBonus;
+								state.phase = GamePhase::LEVEL_CLEAR;
+								state.levelTransitionTimer = 0.f;
+								state.successfulMissions += 1;
+								int timeBonus = static_cast<int>(state.missionTimer * 10.f);
+								int fuelBonus = static_cast<int>(state.fuel * 5.f);
+								state.score += 500 + timeBonus + fuelBonus;
+								achievements.unlock(AchievementId::FIRST_LANDING);
 					}
 				}
 			}
@@ -1136,12 +1151,18 @@ int main() try
 		std::snprintf(hudLine4, sizeof(hudLine4), "SPEED: x%.2f  CAM: %s  FUEL: %.0f%%", state.launchSpeedScale, state.followCamera ? "ON" : "OFF", state.fuel);
 		std::snprintf(hudLine5, sizeof(hudLine5), "CAM %s  S/R: %.1f / %.1f  (P, ,/. ;/')", followPresetName, state.followCamSmoothing, state.followCamRecentering);
 		std::snprintf(hudLine6, sizeof(hudLine6), "COMBO: x%d  CANISTERS: %d/%d", comboTracker.getComboCount(), fuelPickups.getRemainingCount(), fuelPickups.getTotalCount());
+		char hudLine7[128];
+		char hudLine8[128];
+		std::snprintf(hudLine7, sizeof(hudLine7), "WIND: %+.1f  ACHIEVE: %d/%d", windSystem.getCurrentOffset(), achievements.getUnlockedCount(), achievements.getTotalCount());
+		std::snprintf(hudLine8, sizeof(hudLine8), "TIME: %.1fs  PHASE: %s", state.gameplayTime, state.camControl.shoot ? "FLIGHT" : "IDLE");
 		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 20.f, 18.f, 0.94f, 0.94f, 0.94f, hudLine1);
-		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 46.f, 18.f, 0.94f, 0.94f, 0.94f, hudLine2);
-		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 72.f, 18.f, 0.94f, 0.94f, 0.94f, hudLine3);
-		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 98.f, 18.f, 0.84f, 0.93f, 1.0f, hudLine4);
-		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 124.f, 17.f, 0.84f, 0.93f, 1.0f, hudLine5);
-		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 150.f, 17.f, 0.30f, 0.95f, 0.45f, hudLine6);
+		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 44.f, 18.f, 0.94f, 0.94f, 0.94f, hudLine2);
+		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 68.f, 18.f, 0.94f, 0.94f, 0.94f, hudLine3);
+		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 92.f, 18.f, 0.84f, 0.93f, 1.0f, hudLine4);
+		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 116.f, 17.f, 0.84f, 0.93f, 1.0f, hudLine5);
+		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 140.f, 17.f, 0.30f, 0.95f, 0.45f, hudLine6);
+		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 164.f, 17.f, 0.65f, 0.80f, 1.0f, hudLine7);
+		draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 188.f, 17.f, 0.75f, 0.75f, 0.75f, hudLine8);
 
 		// Fuel bar (top-right)
 		{
@@ -1161,16 +1182,16 @@ int main() try
 
 		if (state.campaignCleared)
 		{
-			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 152.f, 18.f, 0.75f, 1.0f, 0.75f, "CAMPAIGN CLEARED - PRESS R TO RESTART");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 218.f, 18.f, 0.75f, 1.0f, 0.75f, "CAMPAIGN CLEARED - PRESS R TO RESTART");
 			char statsLine[128];
-			std::snprintf(statsLine, sizeof(statsLine), "FINAL SCORE: %d  LAUNCHES: %d  MISSIONS: %d/6",
-				state.score, state.launchCount, state.successfulMissions);
-			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 178.f, 17.f, 0.85f, 0.95f, 0.85f, statsLine);
+			std::snprintf(statsLine, sizeof(statsLine), "FINAL SCORE: %d  LAUNCHES: %d  MISSIONS: %d/6  ACHIEVE: %d/%d",
+				state.score, state.launchCount, state.successfulMissions, achievements.getUnlockedCount(), achievements.getTotalCount());
+			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 244.f, 17.f, 0.85f, 0.95f, 0.85f, statsLine);
 		}
 		else if (state.missionComplete)
-			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 152.f, 18.f, 0.75f, 1.0f, 0.75f, "MISSION COMPLETE - AUTO NEXT LEVEL");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 218.f, 18.f, 0.75f, 1.0f, 0.75f, "MISSION COMPLETE - AUTO NEXT LEVEL");
 		else if (state.missionFailed)
-			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 152.f, 18.f, 1.0f, 0.70f, 0.70f, "MISSION FAILED - PRESS R TO RETRY");
+			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 218.f, 18.f, 1.0f, 0.70f, 0.70f, "MISSION FAILED - PRESS R TO RETRY");
 
 // Level progress bar (bottom center)
 {
@@ -1554,23 +1575,23 @@ namespace
 			else if (GLFW_KEY_F == aKey && GLFW_PRESS == aAction)
 			{
 				if (!state->camControl.shoot)
-					state->launchCount += 1;
-				if (state->camControl.shootTime <= 0.f)
-				{
-					state->targetCollected = { false, false, false };
-					state->bossGatePassed = { false, false, false };
-					state->missionTimer = kLevels[state->currentLevel].missionTime;
-				}
-				state->camControl.flightOffsetY = 0.f;
-				state->camControl.flightOffsetZ = 0.f;
-				state->camControl.followPhi = 0.f;
-				state->camControl.followTheta = 0.f;
-				state->camControl.shoot = true;
-				state->fuel = kMaxFuel_;
-				state->phase = GamePhase::FLYING;
-				state->missionComplete = false;
-				state->missionFailed = false;
-			}
+						state->launchCount += 1;
+					if (state->camControl.shootTime <= 0.f)
+					{
+						state->targetCollected = { false, false, false };
+						state->bossGatePassed = { false, false, false };
+						state->missionTimer = kLevels[state->currentLevel].missionTime;
+					}
+					state->camControl.flightOffsetY = 0.f;
+					state->camControl.flightOffsetZ = 0.f;
+					state->camControl.followPhi = 0.f;
+					state->camControl.followTheta = 0.f;
+						state->camControl.shoot = true;
+						state->fuel = kMaxFuel_;
+						state->phase = GamePhase::FLYING;
+						state->missionComplete = false;
+						state->missionFailed = false;
+					}
 			else if (GLFW_KEY_R == aKey && GLFW_PRESS == aAction)
 			{
 				state->camControl.shoot = false;
