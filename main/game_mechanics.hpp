@@ -8,6 +8,8 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <algorithm>
+#include <string>
 
 #include "../vmlib/vec3.hpp"
 #include "../vmlib/vec4.hpp"
@@ -178,6 +180,8 @@ public:
             if (activeEffects_[i] >= 0.0f)
             {
                 activeEffects_[i] += deltaTime;
+                if (activeEffects_[i] >= getPowerUpDuration(static_cast<PowerUpType>(i)))
+                    activeEffects_[i] = -1.0f;
             }
         }
     }
@@ -188,10 +192,33 @@ public:
         return activeEffects_[idx] >= 0.0f;
     }
 
+    float getRemainingTime(PowerUpType type) const
+    {
+        int idx = static_cast<int>(type);
+        if (activeEffects_[idx] < 0.0f)
+            return 0.0f;
+
+        float duration = getPowerUpDuration(type);
+        return std::max(0.0f, duration - activeEffects_[idx]);
+    }
+
     const std::vector<PowerUp>& getPowerUps() const { return powerUps_; }
     std::vector<PowerUp>& getPowerUps() { return powerUps_; }
 
 private:
+    static float getPowerUpDuration(PowerUpType type)
+    {
+        switch (type)
+        {
+        case PowerUpType::SPEED_BOOST: return 5.0f;
+        case PowerUpType::SHIELD: return 7.0f;
+        case PowerUpType::SLOW_TIME: return 4.0f;
+        case PowerUpType::FUEL_RECOVERY: return 2.0f;
+        case PowerUpType::AUTO_PILOT: return 6.0f;
+        default: return 5.0f;
+        }
+    }
+
     std::vector<PowerUp> powerUps_;
     std::array<float, 5> activeEffects_ = {-1.0f, -1.0f, -1.0f, -1.0f, -1.0f};
 };

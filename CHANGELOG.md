@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions CI workflow for Windows (`Debug` + `Release`) builds on every push/PR.
 - Unit tests for start-menu hit-testing and game configuration reset behavior.
 - More resilient OBJ loading fallback behavior for missing normals/UV/material assignments.
+- Reusable telemetry overlay module for HUD analytics (`main/telemetry_overlay.hpp`) with risk scoring, sparkline geometry generation, and radar marker generation.
+- New unit test coverage for telemetry overlay and gameplay mechanics lifecycle scenarios.
 
 ### Changed
 - Improved rocket model rendering pipeline
@@ -25,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI now executes `vmlib-test` in both `Debug` and `Release` configurations.
 - Material texture path resolution now follows the loaded OBJ directory instead of relying on a fixed `assets/` prefix.
 - GPU frame timing in test mode now uses non-blocking query polling and reports values in milliseconds.
+- Timed power-up effects now automatically expire and expose remaining duration query support.
+- CI workflow upgraded to matrix-based configuration with JUnit report export and artifact publishing.
 
 ### Fixed
 - Camera jitter issues
