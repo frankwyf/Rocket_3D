@@ -97,6 +97,7 @@
   <ItemGroup>
     <ClCompile Include="gameplay_sanity.cpp" />
     <ClCompile Include="game_mechanics_sanity.cpp" />
+    <ClCompile Include="menu_screen_boundaries.cpp" />
     <ClCompile Include="mutiplication.cpp" />
     <ClCompile Include="projection.cpp" />
     <ClCompile Include="rotation.cpp" />
