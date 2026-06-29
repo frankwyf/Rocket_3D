@@ -100,3 +100,24 @@ TEST_CASE("Radar marker builds symmetric cross points", "[telemetry][overlay]")
     REQUIRE(marker[1].x == Catch::Approx(0.7f));
     REQUIRE(marker[3].x == Catch::Approx(-0.3f));
 }
+
+TEST_CASE("Trend detection reports stable for near-constant values", "[telemetry][analytics]")
+{
+    telemetry_overlay::TelemetryHistory history(6);
+    history.push({ 0.0f, 5.0000f, 3.0f, 60.0f });
+    history.push({ 1.0f, 5.0004f, 3.0f, 60.0f });
+    history.push({ 2.0f, 5.0002f, 3.0f, 60.0f });
+
+    auto trend = telemetry_overlay::detect_metric_trend(history, telemetry_overlay::Metric::Altitude, 3, 0.001f);
+    REQUIRE(trend == telemetry_overlay::Trend::Stable);
+}
+
+TEST_CASE("Average uses entire history when tail count exceeds size", "[telemetry][analytics]")
+{
+    telemetry_overlay::TelemetryHistory history(4);
+    history.push({ 0.0f, 1.0f, 2.0f, 50.0f });
+    history.push({ 1.0f, 3.0f, 4.0f, 70.0f });
+
+    float avgSpeed = telemetry_overlay::compute_metric_average(history, telemetry_overlay::Metric::Speed, 99);
+    REQUIRE(avgSpeed == Catch::Approx(3.0f));
+}

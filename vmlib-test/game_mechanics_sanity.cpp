@@ -107,3 +107,106 @@ TEST_CASE("Replay timestamp validator catches disorder", "[mechanics][replay]")
     REQUIRE(replay_export::validate_monotonic_timestamps(ordered));
     REQUIRE_FALSE(replay_export::validate_monotonic_timestamps(disordered));
 }
+
+TEST_CASE("Particle emitter respects capacity and removes expired particles", "[mechanics][particle]")
+{
+    ParticleEmitter emitter(Vec3f{ 0.0f, 0.0f, 0.0f }, 3);
+
+    Particle p;
+    p.position = Vec3f{ 0.0f, 0.0f, 0.0f };
+    p.velocity = Vec3f{ 0.0f, 1.0f, 0.0f };
+    p.color = Vec3f{ 1.0f, 0.5f, 0.2f };
+    p.lifetime = 0.1f;
+    p.maxLifetime = 0.1f;
+    p.size = 1.0f;
+
+    emitter.emit(p, 10);
+    REQUIRE(emitter.getParticles().size() == 3);
+
+    emitter.update(0.05f);
+    REQUIRE(emitter.getParticles().size() == 3);
+
+    emitter.update(0.06f);
+    REQUIRE(emitter.getParticles().empty());
+}
+
+TEST_CASE("Score manager applies multiplier and landing stats correctly", "[mechanics][score]")
+{
+    ScoreManager score;
+
+    score.updateMultiplier(1.5f);
+    score.updateScore(20.0f);
+    REQUIRE(score.getScore() == 30);
+
+    score.recordLanding(80, true);
+    REQUIRE(score.getScore() == 150);
+
+    score.recordLanding(0, false);
+    REQUIRE(score.getScore() == 165);
+
+    REQUIRE(score.getStatistics().landingAttempts == 2);
+    REQUIRE(score.getStatistics().successfulLandings == 1);
+}
+
+TEST_CASE("Challenge manager advances timed-out trial and completes next challenge", "[mechanics][challenge]")
+{
+    ChallengeManager manager;
+    manager.addChallenge(Challenge(
+        ChallengeType::TIME_TRIAL,
+        "Trial A",
+        "Reach A quickly",
+        Vec3f{ 50.0f, 0.0f, 0.0f },
+        1.0f,
+        0.1f,
+        10
+    ));
+    manager.addChallenge(Challenge(
+        ChallengeType::PRECISION_LANDING,
+        "Landing B",
+        "Reach B",
+        Vec3f{ 2.0f, 0.0f, 0.0f },
+        0.8f,
+        10.0f,
+        20
+    ));
+
+    manager.update(0.2f, Vec3f{ 0.0f, 0.0f, 0.0f });
+    auto current = manager.getCurrentChallenge();
+    REQUIRE(current != nullptr);
+    REQUIRE(current->name == "Landing B");
+
+    manager.update(0.01f, Vec3f{ 2.2f, 0.0f, 0.0f });
+    REQUIRE(manager.getCompletedCount() == 1);
+}
+
+TEST_CASE("Waypoint navigator tracks progress in order", "[mechanics][waypoint]")
+{
+    WaypointNavigator nav;
+    nav.addWaypoint(Waypoint(Vec3f{ 1.0f, 0.0f, 0.0f }, 0.5f, 0));
+    nav.addWaypoint(Waypoint(Vec3f{ 2.0f, 0.0f, 0.0f }, 0.5f, 1));
+
+    REQUIRE(nav.getProgress() == 0);
+    REQUIRE_FALSE(nav.isComplete());
+
+    nav.checkPosition(Vec3f{ 1.1f, 0.0f, 0.0f });
+    REQUIRE(nav.getProgress() == 1);
+
+    nav.checkPosition(Vec3f{ 2.2f, 0.0f, 0.0f });
+    REQUIRE(nav.getProgress() == 2);
+    REQUIRE(nav.isComplete());
+    REQUIRE(nav.getNextWaypoint() == nullptr);
+}
+
+TEST_CASE("Replay export handles empty frames and monotonic validator", "[mechanics][replay]")
+{
+    std::vector<FlightFrame> frames;
+    auto csv = replay_export::to_csv(frames);
+    REQUIRE(csv == "timestamp,position_x,position_y,position_z,velocity_x,velocity_y,velocity_z,speed,altitude\n");
+
+    REQUIRE(replay_export::validate_monotonic_timestamps(frames));
+
+    frames.push_back({ 2.0f, Vec3f{ 0.0f, 0.0f, 0.0f }, Vec3f{ 0.0f, 0.0f, 0.0f }, 0.0f, 0.0f });
+    frames.push_back({ 1.0f, Vec3f{ 0.0f, 0.0f, 0.0f }, Vec3f{ 0.0f, 0.0f, 0.0f }, 0.0f, 0.0f });
+
+    REQUIRE_FALSE(replay_export::validate_monotonic_timestamps(frames));
+}

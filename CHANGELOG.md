@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Telemetry analytics helpers for average and trend detection in HUD/overlay diagnostics.
 - Recorder rolling-buffer behavior and clear/reset support for replay/session robustness.
 - Replay CSV export and timestamp validation helpers for deterministic post-run analysis.
+- Expanded mechanics/telemetry tests for particles, scoring, challenge timeout progression, waypoint sequencing, and analytics edge cases.
 
 ### Changed
 - Improved rocket model rendering pipeline
