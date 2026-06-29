@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New menu boundary test suite for robust start-screen hit detection edge validation.
 - Tri-lingual best-practices guides (`EN`/`zh-CN`/`ja`) for engineering, testing, and CI quality gates.
 - Dedicated GitHub Actions coverage workflow with Cobertura export and artifact upload.
+- Telemetry analytics helpers for average and trend detection in HUD/overlay diagnostics.
+- Recorder rolling-buffer behavior and clear/reset support for replay/session robustness.
 
 ### Changed
 - Improved rocket model rendering pipeline
@@ -33,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Timed power-up effects now automatically expire and expose remaining duration query support.
 - CI workflow upgraded to matrix-based configuration with JUnit report export and artifact publishing.
 - Coverage pipeline now enforces a minimum line-coverage threshold in GitHub Actions.
+- CI and coverage workflows now use concurrency cancellation and timeout guards for faster, cleaner pipeline feedback.
 
 ### Fixed
 - Camera jitter issues

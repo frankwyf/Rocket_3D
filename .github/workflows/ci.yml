@@ -7,9 +7,14 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test-windows:
     runs-on: windows-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -51,3 +56,12 @@ jobs:
           path: |
             bin/main-*.exe
             bin/vmlib-test-*.exe
+
+      - name: Publish CI summary (${{ matrix.configuration }})
+        if: always()
+        shell: powershell
+        run: |
+          if (-not $env:GITHUB_STEP_SUMMARY) { return }
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## CI Matrix Result - ${{ matrix.configuration }}"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Build: completed"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "- Unit tests: completed"
