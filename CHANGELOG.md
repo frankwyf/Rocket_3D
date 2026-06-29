@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dedicated GitHub Actions coverage workflow with Cobertura export and artifact upload.
 - Telemetry analytics helpers for average and trend detection in HUD/overlay diagnostics.
 - Recorder rolling-buffer behavior and clear/reset support for replay/session robustness.
+- Replay CSV export and timestamp validation helpers for deterministic post-run analysis.
 
 ### Changed
 - Improved rocket model rendering pipeline
@@ -36,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI workflow upgraded to matrix-based configuration with JUnit report export and artifact publishing.
 - Coverage pipeline now enforces a minimum line-coverage threshold in GitHub Actions.
 - CI and coverage workflows now use concurrency cancellation and timeout guards for faster, cleaner pipeline feedback.
+- Coverage gate now supports adaptive thresholds (`measured` vs `fallback`) to keep Action reliability while nudging quality upward.
 
 ### Fixed
 - Camera jitter issues

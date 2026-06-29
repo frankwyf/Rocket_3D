@@ -57,6 +57,7 @@ jobs:
           '@
 
           $coverageExe = $null
+          $coverageMode = "measured"
           $coverageCmd = Get-Command OpenCppCoverage.exe -ErrorAction SilentlyContinue
           if ($coverageCmd) {
             $coverageExe = $coverageCmd.Source
@@ -79,6 +80,7 @@ jobs:
 
           if (-not $coverageExe -or -not (Test-Path $coverageExe)) {
             Write-Warning "OpenCppCoverage.exe not found. Falling back to test-only execution with zero-coverage report."
+            $coverageMode = "fallback"
             & $testExe.FullName
             if ($LASTEXITCODE -ne 0) { throw "Tests failed with code $LASTEXITCODE" }
             $fallbackXml | Set-Content -Path artifacts/coverage/coverage.xml -Encoding utf8
@@ -95,6 +97,7 @@ jobs:
 
             if ($LASTEXITCODE -ne 0) {
               Write-Warning "Coverage runner failed (exit $LASTEXITCODE). Falling back to test-only execution with zero-coverage report."
+              $coverageMode = "fallback"
               & $testExe.FullName
               if ($LASTEXITCODE -ne 0) { throw "Tests failed with code $LASTEXITCODE" }
               $fallbackXml | Set-Content -Path artifacts/coverage/coverage.xml -Encoding utf8
@@ -104,6 +107,7 @@ jobs:
           [xml]$cov = Get-Content artifacts/coverage/coverage.xml
           $linePct = [Math]::Round(([double]$cov.coverage.'line-rate') * 100.0, 2)
           "line_coverage=$linePct" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "coverage_mode=$coverageMode" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Coverage summary
         continue-on-error: true
@@ -133,8 +137,10 @@ jobs:
       - name: Enforce coverage threshold
         shell: powershell
         run: |
+          $mode = "${{ steps.coverage.outputs.coverage_mode }}"
           $coverage = [double]"${{ steps.coverage.outputs.line_coverage }}"
-          $threshold = 0.0
+          $threshold = if ($mode -eq "measured") { 8.0 } else { 0.0 }
+          Write-Host "Coverage mode: $mode"
           Write-Host "Line coverage: $coverage% (threshold: $threshold%)"
           if ($coverage -lt $threshold) {
             throw "Coverage threshold not met: $coverage% < $threshold%"
