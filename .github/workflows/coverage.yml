@@ -1,0 +1,86 @@
+name: Coverage
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  coverage-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Install OpenCppCoverage
+        shell: powershell
+        run: choco install opencppcoverage -y --no-progress
+
+      - name: Build Debug
+        shell: powershell
+        run: msbuild Rocket3D.sln /p:Configuration=Debug /p:Platform=x64 /m
+
+      - name: Run tests with coverage
+        id: coverage
+        shell: powershell
+        run: |
+          $testExe = Get-ChildItem -Path bin -Filter "vmlib-test-debug-*.exe" | Select-Object -First 1
+          if (-not $testExe) { throw "Debug test executable not found." }
+
+          $coverageExe = Join-Path $env:ProgramFiles "OpenCppCoverage\OpenCppCoverage.exe"
+          if (-not (Test-Path $coverageExe)) {
+            $coverageExe = Join-Path ${env:ProgramFiles(x86)} "OpenCppCoverage\OpenCppCoverage.exe"
+          }
+          if (-not (Test-Path $coverageExe)) { throw "OpenCppCoverage.exe not found." }
+
+          New-Item -ItemType Directory -Force -Path artifacts/coverage | Out-Null
+
+          & $coverageExe `
+            --sources "$env:GITHUB_WORKSPACE\main" `
+            --sources "$env:GITHUB_WORKSPACE\vmlib" `
+            --excluded_sources "$env:GITHUB_WORKSPACE\third_party\*" `
+            --export_type cobertura:artifacts/coverage/coverage.xml `
+            -- $testExe.FullName
+
+          if ($LASTEXITCODE -ne 0) { throw "Coverage run failed with code $LASTEXITCODE" }
+
+          [xml]$cov = Get-Content artifacts/coverage/coverage.xml
+          $linePct = [Math]::Round(([double]$cov.coverage.'line-rate') * 100.0, 2)
+          "line_coverage=$linePct" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Coverage summary
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: artifacts/coverage/coverage.xml
+          badge: true
+          format: markdown
+          indicators: true
+          output: both
+          fail_below_min: false
+
+      - name: Enforce coverage threshold
+        shell: powershell
+        run: |
+          $coverage = [double]"${{ steps.coverage.outputs.line_coverage }}"
+          $threshold = 60.0
+          Write-Host "Line coverage: $coverage% (threshold: $threshold%)"
+          if ($coverage -lt $threshold) {
+            throw "Coverage threshold not met: $coverage% < $threshold%"
+          }
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-cobertura
+          path: |
+            artifacts/coverage/coverage.xml
+            code-coverage-results.md
