@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - More resilient OBJ loading fallback behavior for missing normals/UV/material assignments.
 - Reusable telemetry overlay module for HUD analytics (`main/telemetry_overlay.hpp`) with risk scoring, sparkline geometry generation, and radar marker generation.
 - New unit test coverage for telemetry overlay and gameplay mechanics lifecycle scenarios.
+- New menu boundary test suite for robust start-screen hit detection edge validation.
+- Tri-lingual best-practices guides (`EN`/`zh-CN`/`ja`) for engineering, testing, and CI quality gates.
+- Dedicated GitHub Actions coverage workflow with Cobertura export and artifact upload.
 
 ### Changed
 - Improved rocket model rendering pipeline
@@ -29,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GPU frame timing in test mode now uses non-blocking query polling and reports values in milliseconds.
 - Timed power-up effects now automatically expire and expose remaining duration query support.
 - CI workflow upgraded to matrix-based configuration with JUnit report export and artifact publishing.
+- Coverage pipeline now enforces a minimum line-coverage threshold in GitHub Actions.
 
 ### Fixed
 - Camera jitter issues
