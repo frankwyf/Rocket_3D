@@ -418,10 +418,23 @@ public:
         isRecording_ = false;
     }
 
+    void clear()
+    {
+        frames_.clear();
+    }
+
     void recordFrame(const FlightFrame& frame)
     {
-        if (isRecording_ && frames_.size() < maxFrames_)
-            frames_.push_back(frame);
+        if (!isRecording_)
+            return;
+
+        if (maxFrames_ == 0)
+            return;
+
+        if (frames_.size() == maxFrames_)
+            frames_.erase(frames_.begin());
+
+        frames_.push_back(frame);
     }
 
     const std::vector<FlightFrame>& getRecording() const { return frames_; }

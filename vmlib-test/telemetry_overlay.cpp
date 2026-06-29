@@ -68,3 +68,35 @@ TEST_CASE("Risk color shifts from greenish to reddish", "[telemetry][color]")
     REQUIRE(high.r > low.r);
     REQUIRE(high.g < low.g);
 }
+
+TEST_CASE("Telemetry averages and trend detection reflect recent motion", "[telemetry][analytics]")
+{
+    telemetry_overlay::TelemetryHistory history(10);
+    history.push({ 0.0f, 1.0f, 4.0f, 100.0f });
+    history.push({ 1.0f, 2.0f, 5.0f, 95.0f });
+    history.push({ 2.0f, 3.0f, 6.0f, 90.0f });
+    history.push({ 3.0f, 4.0f, 7.0f, 85.0f });
+
+    float avgAllAltitude = telemetry_overlay::compute_metric_average(history, telemetry_overlay::Metric::Altitude);
+    float avgTailFuel = telemetry_overlay::compute_metric_average(history, telemetry_overlay::Metric::Fuel, 2);
+
+    REQUIRE(avgAllAltitude == Catch::Approx(2.5f));
+    REQUIRE(avgTailFuel == Catch::Approx(87.5f));
+
+    auto speedTrend = telemetry_overlay::detect_metric_trend(history, telemetry_overlay::Metric::Speed, 4);
+    auto fuelTrend = telemetry_overlay::detect_metric_trend(history, telemetry_overlay::Metric::Fuel, 4);
+
+    REQUIRE(speedTrend == telemetry_overlay::Trend::Up);
+    REQUIRE(fuelTrend == telemetry_overlay::Trend::Down);
+}
+
+TEST_CASE("Radar marker builds symmetric cross points", "[telemetry][overlay]")
+{
+    auto marker = telemetry_overlay::make_radar_marker(0.2f, -0.3f, 0.5f);
+    REQUIRE(marker[0].x == Catch::Approx(0.2f));
+    REQUIRE(marker[0].y == Catch::Approx(0.2f));
+    REQUIRE(marker[2].x == Catch::Approx(0.2f));
+    REQUIRE(marker[2].y == Catch::Approx(-0.8f));
+    REQUIRE(marker[1].x == Catch::Approx(0.7f));
+    REQUIRE(marker[3].x == Catch::Approx(-0.3f));
+}

@@ -49,7 +49,20 @@ TEST_CASE("Flight recorder obeys record state and max capacity", "[mechanics][re
     recorder.recordFrame({ 0.3f, Vec3f{ 3.0f, 4.0f, 5.0f }, Vec3f{ 1.0f, 0.0f, 0.0f }, 1.0f, 4.0f });
 
     REQUIRE(recorder.getRecording().size() == 2);
+    REQUIRE(recorder.getRecording().front().timestamp == Catch::Approx(0.2f));
+    REQUIRE(recorder.getRecording().back().timestamp == Catch::Approx(0.3f));
+
+    recorder.clear();
+    REQUIRE(recorder.getRecording().empty());
 
     recorder.stopRecording();
     REQUIRE_FALSE(recorder.isRecording());
+}
+
+TEST_CASE("Flight recorder ignores writes when maxFrames is zero", "[mechanics][recorder]")
+{
+    FlightRecorder recorder(0);
+    recorder.startRecording();
+    recorder.recordFrame({ 0.5f, Vec3f{ 0.0f, 0.0f, 0.0f }, Vec3f{ 0.0f, 0.0f, 0.0f }, 0.0f, 0.0f });
+    REQUIRE(recorder.getRecording().empty());
 }

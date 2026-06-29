@@ -37,6 +37,13 @@ namespace telemetry_overlay
         Risk
     };
 
+    enum class Trend
+    {
+        Down,
+        Stable,
+        Up
+    };
+
     class TelemetryHistory
     {
     public:
@@ -143,6 +150,42 @@ namespace telemetry_overlay
         }
 
         return points;
+    }
+
+    inline float compute_metric_average(const TelemetryHistory& history, Metric metric, std::size_t tailCount = 0)
+    {
+        const auto& samples = history.data();
+        if (samples.empty())
+            return 0.0f;
+
+        std::size_t count = tailCount == 0 ? samples.size() : std::min(tailCount, samples.size());
+        std::size_t start = samples.size() - count;
+
+        float sum = 0.0f;
+        for (std::size_t i = start; i < samples.size(); ++i)
+            sum += select_metric_value(samples[i], metric);
+
+        return sum / static_cast<float>(count);
+    }
+
+    inline Trend detect_metric_trend(const TelemetryHistory& history, Metric metric, std::size_t tailCount = 6, float epsilon = 0.001f)
+    {
+        const auto& samples = history.data();
+        if (samples.size() < 2)
+            return Trend::Stable;
+
+        std::size_t count = std::max<std::size_t>(2, std::min(tailCount, samples.size()));
+        std::size_t start = samples.size() - count;
+
+        float first = select_metric_value(samples[start], metric);
+        float last = select_metric_value(samples.back(), metric);
+        float delta = last - first;
+
+        if (delta > epsilon)
+            return Trend::Up;
+        if (delta < -epsilon)
+            return Trend::Down;
+        return Trend::Stable;
     }
 
     inline std::array<OverlayPoint, 4> make_radar_marker(float centerX, float centerY, float radius)
