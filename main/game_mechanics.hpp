@@ -156,7 +156,10 @@ struct PowerUp
 class PowerUpManager
 {
 public:
-    PowerUpManager() : powerUps_(), activeEffects_() {}
+    PowerUpManager() : powerUps_(), activeEffects_()
+    {
+        activeEffects_.fill(-1.0f);
+    }
 
     void addPowerUp(const PowerUp& powerUp)
     {
@@ -190,6 +193,22 @@ public:
     {
         int idx = static_cast<int>(type);
         return activeEffects_[idx] >= 0.0f;
+    }
+
+    void resetAllEffects()
+    {
+        activeEffects_.fill(-1.0f);
+    }
+
+    int getActiveEffectCount() const
+    {
+        int count = 0;
+        for (float timer : activeEffects_)
+        {
+            if (timer >= 0.0f)
+                ++count;
+        }
+        return count;
     }
 
     float getRemainingTime(PowerUpType type) const
