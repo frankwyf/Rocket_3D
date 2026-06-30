@@ -106,6 +106,7 @@
     <ClCompile Include="hud_renderer_tests.cpp" />
     <ClCompile Include="integration_edge_tests.cpp" />
     <ClCompile Include="level_data_tests.cpp" />
+    <ClCompile Include="minimap_tests.cpp" />
     <ClCompile Include="menu_screen_boundaries.cpp" />
     <ClCompile Include="mutiplication.cpp" />
     <ClCompile Include="projection.cpp" />
