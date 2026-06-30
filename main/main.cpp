@@ -536,6 +536,7 @@ int main() try
 	WindSystem windSystem(0.0f, 1.0f, 0.0f);
 	AchievementTracker achievements;
 	DifficultyScaler diffScaler;
+	StreakTracker streakTracker;
 
 	auto last = Clock::now();
 
@@ -745,6 +746,7 @@ int main() try
 				state.missionTimer = 0.f;
 				state.missionFailed = true;
 				state.camControl.shoot = false;
+				streakTracker.recordFailure();
 			}
 
 			if (state.camControl.shoot)
@@ -757,6 +759,7 @@ int main() try
 						state.missionFailed = true;
 						state.camControl.shoot = false;
 						state.phase = GamePhase::FAILED;
+						streakTracker.recordFailure();
 						break;
 					}
 				}
@@ -821,14 +824,15 @@ int main() try
 					if (std::fabs(rocketWorldPos.x - 71.f) < 1.8f && std::fabs(rocketWorldPos.y + 0.97f) < 1.2f && std::fabs(rocketWorldPos.z + 1.f) < 1.5f)
 						{
 							state.missionComplete = true;
-									state.phase = GamePhase::LEVEL_CLEAR;
-									state.levelTransitionTimer = 0.f;
-									state.successfulMissions += 1;
-									auto missionBonus = scoring::compute_mission_score(state.missionTimer, state.fuel, comboTracker.getTotalBonus());
-									state.score += missionBonus.total;
-									achievements.unlock(AchievementId::FIRST_LANDING);
-									if (!state.steerUsedThisFlight)
-										achievements.unlock(AchievementId::NO_STEERING);
+										state.phase = GamePhase::LEVEL_CLEAR;
+										state.levelTransitionTimer = 0.f;
+										state.successfulMissions += 1;
+										auto missionBonus = scoring::compute_mission_score(state.missionTimer, state.fuel, comboTracker.getTotalBonus());
+										state.score += static_cast<int>(missionBonus.total * streakTracker.getMultiplier());
+										streakTracker.recordSuccess();
+										achievements.unlock(AchievementId::FIRST_LANDING);
+										if (!state.steerUsedThisFlight)
+											achievements.unlock(AchievementId::NO_STEERING);
 						}
 				}
 			}

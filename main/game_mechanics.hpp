@@ -746,4 +746,47 @@ private:
     int level_;
 };
 
+// ============================================================================
+// Mission Streak Tracker
+// ============================================================================
+
+class StreakTracker
+{
+public:
+    StreakTracker() : current_(0), best_(0) {}
+
+    void recordSuccess()
+    {
+        current_++;
+        if (current_ > best_)
+            best_ = current_;
+    }
+
+    void recordFailure()
+    {
+        current_ = 0;
+    }
+
+    int getCurrent() const { return current_; }
+    int getBest() const { return best_; }
+
+    float getMultiplier() const
+    {
+        if (current_ >= 5) return 2.0f;
+        if (current_ >= 3) return 1.5f;
+        if (current_ >= 1) return 1.2f;
+        return 1.0f;
+    }
+
+    void reset()
+    {
+        current_ = 0;
+        best_ = 0;
+    }
+
+private:
+    int current_;
+    int best_;
+};
+
 #endif // GAME_MECHANICS_HPP
