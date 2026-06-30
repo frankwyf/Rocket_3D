@@ -112,6 +112,7 @@
     <ClCompile Include="projection.cpp" />
     <ClCompile Include="rotation.cpp" />
     <ClCompile Include="scoring_helpers_tests.cpp" />
+    <ClCompile Include="spawn_manager_tests.cpp" />
     <ClCompile Include="streak_tracker_tests.cpp" />
     <ClCompile Include="telemetry_overlay.cpp" />
     <ClCompile Include="text_renderer_tests.cpp" />

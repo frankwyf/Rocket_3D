@@ -111,6 +111,7 @@
     <ClInclude Include="rocket.hpp" />
     <ClInclude Include="scoring_helpers.hpp" />
     <ClInclude Include="ship_builder.hpp" />
+    <ClInclude Include="spawn_manager.hpp" />
     <ClInclude Include="simple_mesh.hpp" />
     <ClInclude Include="telemetry_overlay.hpp" />
     <ClInclude Include="text_renderer.hpp" />
