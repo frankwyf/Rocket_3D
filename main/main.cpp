@@ -1195,6 +1195,11 @@ int main() try
 			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 164.f, 17.f, 0.65f, 0.80f, 1.0f, hud.line7);
 			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 188.f, 17.f, 0.75f, 0.75f, 0.75f, hud.line8);
 
+			// Streak line
+			char streakBuf[128];
+			std::snprintf(streakBuf, sizeof(streakBuf), "STREAK: %d (BEST: %d)  MUL: x%.1f", streakTracker.getCurrent(), streakTracker.getBest(), streakTracker.getMultiplier());
+			draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 212.f, 17.f, 1.0f, 0.85f, 0.30f, streakBuf);
+
 			// Fuel bar (top-right)
 			float fuelR = 1.0f - hud.fuelFraction;
 			float fuelG = hud.fuelFraction;
@@ -1206,13 +1211,13 @@ int main() try
 
 			if (state.campaignCleared)
 			{
-				draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 218.f, 18.f, 0.75f, 1.0f, 0.75f, "CAMPAIGN CLEARED - PRESS R TO RESTART");
-				draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 244.f, 17.f, 0.85f, 0.95f, 0.85f, hud.statusLine);
+				draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 240.f, 18.f, 0.75f, 1.0f, 0.75f, "CAMPAIGN CLEARED - PRESS R TO RESTART");
+				draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 266.f, 17.f, 0.85f, 0.95f, 0.85f, hud.statusLine);
 			}
 			else if (state.missionComplete)
-				draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 218.f, 18.f, 0.75f, 1.0f, 0.75f, "MISSION COMPLETE - AUTO NEXT LEVEL");
+				draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 240.f, 18.f, 0.75f, 1.0f, 0.75f, "MISSION COMPLETE - AUTO NEXT LEVEL");
 			else if (state.missionFailed)
-				draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 218.f, 18.f, 1.0f, 0.70f, 0.70f, "MISSION FAILED - PRESS R TO RETRY");
+				draw_text(prog_ui, textBatch, nwidth, nheight, 20.f, 240.f, 18.f, 1.0f, 0.70f, 0.70f, "MISSION FAILED - PRESS R TO RETRY");
 
 			// Level progress bar (bottom center)
 			std::vector<Vertex2D> progBar;

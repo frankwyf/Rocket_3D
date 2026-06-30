@@ -104,6 +104,7 @@
     <ClCompile Include="gameplay_sanity.cpp" />
     <ClCompile Include="game_mechanics_sanity.cpp" />
     <ClCompile Include="hud_renderer_tests.cpp" />
+    <ClCompile Include="integration_edge_tests.cpp" />
     <ClCompile Include="level_data_tests.cpp" />
     <ClCompile Include="menu_screen_boundaries.cpp" />
     <ClCompile Include="mutiplication.cpp" />
